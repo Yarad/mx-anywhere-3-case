@@ -10,7 +10,7 @@ import trimesh
 from scipy import ndimage
 
 from . import fields as F
-from . import form, hinge, lattice
+from . import form, hinge, lattice, printout
 from .preview import preview
 from . import params as P
 
@@ -40,7 +40,11 @@ def lattice_walls(grid, O, Cb, Cl, Pl, pads, contacts, magnets):
     """Walls of base and lid with the Voronoi lattice cut through them."""
     s_out = grid.to_mesh(O)
     nodes = lattice.contact_nodes(s_out, contacts, magnets)
-    seed_pts = lattice.seeds(s_out, nodes, magnets)
+    if P.SEEDS_FILE.exists():  # the approved layout: same cells at any resolution or small form change
+        seed_pts = np.load(P.SEEDS_FILE)
+    else:
+        seed_pts = lattice.seeds(s_out, nodes, magnets)
+        np.save(P.SEEDS_FILE, seed_pts)
     log(f"lattice: {len(seed_pts)} cells, contact nodes: {', '.join(n[0] for n in nodes)}")
     gx, gy, gz = np.gradient(O, grid.h)
     walls = []
@@ -72,7 +76,7 @@ def build(stage="stage1"):
     OUT = P.BUILD / stage
     with_lattice = stage != "stage1"
     OUT.mkdir(parents=True, exist_ok=True)
-    grid = F.Grid()
+    grid = F.Grid(h=P.VOXEL_PRINT if stage == "print" else P.VOXEL)
     log(f"grid {grid.shape} = {np.prod(grid.shape) / 1e6:.1f} M voxels")
     sm = F.mouse_sdf(grid); log("mouse sdf")
     O = F.outer_sdf(grid); log("outer sdf")
@@ -129,7 +133,10 @@ def build(stage="stage1"):
     mouse = grid.to_mesh(sm)  # clean, consistently wound copy of the scan
 
     report(lid, base, hinge.to_manifold(mouse), magnets)
-    export_views(lid_t, base_t, mouse)
+    if stage == "print":
+        printout.export(lid, base, OUT, log)
+    else:
+        export_views(lid_t, base_t, mouse)
     preview(stage)  # light GLBs for the viewer
     np.savez_compressed(OUT / "info.npz", magnets=np.array(magnets))
     log("done")

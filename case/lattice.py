@@ -24,6 +24,8 @@ RIB_W = 3.6          # rib width at full width, just under the outer chamfer
 RIB_CHAMFER = 0.8    # outer chamfer
 RIB_INNER_CHAMFER = 0.5
 RIB_TAPER = 0.8 / 5.2  # half-width lost per mm of depth (3.6 -> 2.0 over 6 mm)
+RIB_MIN = 2.0         # the wedge never gets thinner than this
+RIB_MIN_FACE = 1.0    # inner face left after the inner chamfer
 CELL_OPEN = 11.0     # seed spacing of the lattice
 CELL_HINGE = 5.0     # seed spacing right at the hinge
 HINGE_REACH = 52.0   # distance from the hinge axis over which cells grow to CELL_OPEN
@@ -137,5 +139,6 @@ def half_width(depth, inner, s, extra=0.0):
     inner face. Grows without bound as s -> 1."""
     w = RIB_W / 2 + extra + 12.0 * smooth_step(0.55, 1.0, s)
     outer = w - RIB_CHAMFER + depth
-    wedge = w - np.maximum(depth - RIB_CHAMFER, 0) * RIB_TAPER
-    return np.minimum.reduce([outer, wedge, wedge - RIB_INNER_CHAMFER + inner])
+    wedge = np.maximum(w - np.maximum(depth - RIB_CHAMFER, 0) * RIB_TAPER, RIB_MIN / 2)  # deep ribs stop narrowing
+    inner_face = np.maximum(wedge - RIB_INNER_CHAMFER, RIB_MIN_FACE / 2) + inner
+    return np.minimum.reduce([outer, wedge, inner_face])

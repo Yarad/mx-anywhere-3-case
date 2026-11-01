@@ -10,11 +10,13 @@ ROOT = Path(__file__).resolve().parent.parent
 SCAN = ROOT / "Logitech MX Anywhere 3.stl"
 BUILD = ROOT / "build"
 CACHE = BUILD / "cache"
+SEEDS_FILE = ROOT / "case" / "approved_seeds.npy"  # delete to re-roll the lattice
 
 TABLE_Z = -0.57
 
 # --- SDF grid -----------------------------------------------------------------
 VOXEL = 0.3
+VOXEL_PRINT = 0.2
 GRID_MIN = (-41.0, -62.0, -7.0)
 GRID_MAX = (41.0, 61.0, 42.5)
 
@@ -35,7 +37,8 @@ LIP_H = 2.5
 LIP_T = 1.4
 LIP_CLEAR = 0.2
 LIP_CHAMFER = 0.6
-LIP_FRONT_Y = -36.0  # no lip in front of this: the hinge keeps the front aligned
+LIP_FRONT_Y = 22.0   # lip only around the back third: the walls along the sides are too thin
+                     # for lip + groove + skirt; the hinge keeps the front aligned
 LIP_MAGNET_KEEPOUT = 5.0
 
 # --- hinge -----------------------------------------------------------------------

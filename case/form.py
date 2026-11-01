@@ -28,7 +28,7 @@ PROFILE_UPPER = [  # back tip -> over the top -> front tip
     [(-45, 22.5), (-52, 16.5), (-55.5, 12), (-55.5, 7.5)],
 ]
 SECTION = [  # normalised right half of the front view, bottom -> top
-    [(0.8, 0.0), (0.96, 0.0), (1.0, 0.188), (1.0, 0.424)],
+    [(0.8, 0.0), (0.87, 0.06), (1.0, 0.188), (1.0, 0.424)],  # leaves the bed at 45 deg: no support
     [(1.0, 0.424), (1.0, 0.753), (0.693, 1.0), (0.0, 1.0)],
 ]
 

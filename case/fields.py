@@ -86,6 +86,15 @@ def _signed_from_samples(grid, pts, normals, inside_fn, plane_near=0.0):
 
 
 def mouse_sdf(grid):
+    if grid.h < P.VOXEL:  # finer grids resample the cached coarse field: the scan is no more precise
+        coarse = Grid()
+        c = mouse_sdf(coarse)
+        out = np.empty(grid.shape, np.float32)
+        for sl, X, Y, Z in grid.chunks():
+            idx = [(A - coarse.lo[i]) / coarse.h for i, A in enumerate((X, Y, Z))]
+            out[sl] = ndimage.map_coordinates(c, idx, order=1, mode="nearest")
+        return out
+
     def compute():
         m = trimesh.load(P.SCAN)
         pts, face = trimesh.sample.sample_surface(m, 1_500_000, seed=1)

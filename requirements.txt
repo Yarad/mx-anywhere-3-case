@@ -6,3 +6,5 @@ manifold3d
 shapely
 matplotlib
 rtree
+lxml
+embreex
