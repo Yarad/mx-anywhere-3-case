@@ -167,8 +167,11 @@ def export_views(lid_t, base_t, mouse):
             s.add_geometry(m, node_name=name, geom_name=name)
         return s
 
-    scene(0).export(OUT / "assembly_closed.glb")
-    scene(105).export(OUT / "assembly_open.glb")
+    from .preview import Z_UP_TO_Y_UP
+    for name, deg in [("closed", 0), ("open", 105)]:
+        sc = scene(deg)
+        sc.apply_transform(Z_UP_TO_Y_UP)  # glTF is Y-up
+        sc.export(OUT / f"assembly_{name}.glb")
 
 
 if __name__ == "__main__":

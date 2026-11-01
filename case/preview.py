@@ -10,6 +10,7 @@ import trimesh
 from . import hinge
 from . import params as P
 
+Z_UP_TO_Y_UP = trimesh.transformations.rotation_matrix(-np.pi / 2, [1, 0, 0])
 COLORS = {"base": [0.36, 0.42, 0.45, 1.0], "lid": [0.85, 0.84, 0.80, 1.0], "mouse": [0.12, 0.12, 0.12, 1.0]}
 
 
@@ -36,6 +37,7 @@ def preview(stage="stage2", open_deg=105):
             m.visual = trimesh.visual.TextureVisuals(material=mat)
             s.add_geometry(m, node_name=part, geom_name=part)
         out = d / f"preview_{name}.glb"
+        s.apply_transform(Z_UP_TO_Y_UP)  # glTF is Y-up: lay the case flat in viewers
         s.export(out)
         print(out, f"{out.stat().st_size / 1e6:.1f} MB", {k: len(v.faces) for k, v in parts.items()})
 

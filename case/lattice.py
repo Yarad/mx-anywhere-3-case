@@ -24,8 +24,7 @@ RIB_W = 3.6          # rib width at full width, just under the outer chamfer
 RIB_CHAMFER = 0.8    # outer chamfer
 RIB_INNER_CHAMFER = 0.5
 RIB_TAPER = 0.8 / 5.2  # half-width lost per mm of depth (3.6 -> 2.0 over 6 mm)
-CELL_OPEN = 11.0     # seed spacing where the lattice is most open
-CELL_DENSE = 5.5     # seed spacing next to solid areas
+CELL_OPEN = 11.0     # seed spacing of the lattice
 CELL_HINGE = 5.0     # seed spacing right at the hinge
 HINGE_REACH = 52.0   # distance from the hinge axis over which cells grow to CELL_OPEN
 HINGE_CURVE = 0.8    # < 1: cells stay large longer and shrink only close to the hinge
@@ -49,8 +48,9 @@ def composition(p, magnets):
     nose and the top. Plus solid spots for the hinge and magnets and a belt
     along the parting plane. Returns s in [0, 1], 1 = solid."""
     x, y, z = p[..., 0], p[..., 1], p[..., 2]
-    u = 0.55 * (y + 56) / 112 + 0.45 * (1 - (z + 4.6) / 43.6)
-    s = smooth_step(0.42, 0.86, u)
+    # steep enough diagonal that the solid heel wraps over the back edge of the lid
+    u = 0.62 * (y + 56) / 112 + 0.38 * (1 - (z + 4.6) / 43.6)
+    s = smooth_step(0.42, 0.82, u)
     belt = np.exp(-(form.plane_distance(y, z) / 3.5) ** 2)
     hinge = np.exp(-((hinge_distance(p) / 9) ** 2)) * (np.abs(x) < 26)
     s = np.maximum.reduce([s, belt, hinge])
@@ -60,11 +60,10 @@ def composition(p, magnets):
 
 
 def cell_size(p, magnets):
-    """Seed spacing: smaller next to solid areas and towards the hinge."""
-    by_solid = CELL_OPEN + (CELL_DENSE - CELL_OPEN) * composition(p, magnets) ** 2  # shrink late
+    """Seed spacing: large everywhere, smaller only towards the hinge. Solid
+    areas keep large cells; their holes close up instead (see half_width)."""
     t = np.clip((hinge_distance(p) - 8) / HINGE_REACH, 0, 1) ** HINGE_CURVE
-    by_hinge = CELL_HINGE + (CELL_OPEN - CELL_HINGE) * t
-    return np.minimum(by_solid, by_hinge)
+    return CELL_HINGE + (CELL_OPEN - CELL_HINGE) * t
 
 
 def contact_nodes(surface, contacts, magnets):
