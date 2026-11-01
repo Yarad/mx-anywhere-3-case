@@ -3,3 +3,6 @@ build/
 __pycache__/
 *.pyc
 .DS_Store
+
+# third-party scan of the mouse, not redistributed (see README)
+Logitech MX Anywhere 3.stl
