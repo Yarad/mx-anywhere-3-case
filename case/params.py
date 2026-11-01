@@ -19,10 +19,10 @@ GRID_MIN = (-41.0, -62.0, -7.0)
 GRID_MAX = (41.0, 61.0, 42.5)
 
 # --- gaps between the mouse and the case ----------------------------------------
-GAP = 1.5            # default
+GAP = 1.7            # default: the mouse touches only the 2 mm bumpers (0.3 mm squeeze)
 GAP_BUTTONS = 3.0    # over wheel, SmartShift, left/right buttons
 GAP_SIDE_BUTTONS = 2.5  # side buttons: pressed sideways, stiff wall right next to them
-GAP_PAD = 1.7        # on contact pads: 2 mm silicone bumper, 0.3 mm squeeze
+GAP_PAD = 1.7        # at contacts inside button zones (strip, nose): back to the bumper gap
 MAX_WALL = 4.5       # stage 1: wall is capped this far in from the outer surface
 RIM_BAND = 6.0       # full wall thickness this far either side of the parting plane
 

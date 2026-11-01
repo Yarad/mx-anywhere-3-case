@@ -39,12 +39,13 @@ def find_magnets(grid, O, Cb, Cl):
 def lattice_walls(grid, O, Cb, Cl, Pl, pads, contacts, magnets):
     """Walls of base and lid with the Voronoi lattice cut through them."""
     s_out = grid.to_mesh(O)
-    seed_pts = lattice.seeds(s_out, contacts, magnets)
-    log(f"lattice: {len(seed_pts)} cells")
+    nodes = lattice.contact_nodes(s_out, contacts, magnets)
+    seed_pts = lattice.seeds(s_out, nodes, magnets)
+    log(f"lattice: {len(seed_pts)} cells, contact nodes: {', '.join(n[0] for n in nodes)}")
     gx, gy, gz = np.gradient(O, grid.h)
     walls = []
+    keep = np.abs(Pl) - P.RIM_BAND  # rim belt stays full thickness
     for C in (Cb, Cl):
-        keep =np.minimum(np.abs(Pl) - P.RIM_BAND, pads)
         wall = np.maximum(O, -C)
         mask = (wall < 0.6) & (O > -lattice.MAX_DEPTH_OPEN - 1)
         idx = np.nonzero(mask)
@@ -53,14 +54,15 @@ def lattice_walls(grid, O, Cb, Cl, Pl, pads, contacts, magnets):
         g /= np.maximum(np.linalg.norm(g, axis=1, keepdims=True), 1e-6)
         o = O[idx]
         proj = x - o[:, None] * g
-        s = lattice.composition(proj, contacts, magnets)
+        s = lattice.composition(proj, magnets)
         depth = -o
         cap = lattice.MAX_DEPTH_OPEN + (lattice.SKIN_SOLID - lattice.MAX_DEPTH_OPEN) * s
         inner = np.minimum(C[idx], cap - depth)
-        rib = lattice.edge_distance(proj, seed_pts) - lattice.half_width(depth, inner, s)
+        hw = lattice.half_width(depth, inner, s, lattice.node_fat(proj, nodes))
+        rib = lattice.edge_distance(proj, seed_pts) - hw
         cut = np.full(grid.shape, 1e3, np.float32)
         cut[idx] = np.maximum(rib, -inner)  # rib, and nothing deeper than the cap
-        cut = np.minimum(cut, keep)  # rim belt and pads stay full thickness
+        cut = np.minimum(cut, keep)
         walls.append(np.maximum(wall, cut))
     return walls
 

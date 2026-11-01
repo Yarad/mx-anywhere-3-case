@@ -158,7 +158,8 @@ def gap_field(grid, contacts):
             q = np.stack([X - p[0], Y - p[1], Z - p[2]], -1)
             along = q @ n
             radial = np.linalg.norm(q - along[..., None] * n, axis=-1)
-            gg = np.where((radial < r + 0.3) & (along > -3) & (along < 8), P.GAP_PAD, gg)
+            w = (1 - _smooth_step((radial - r + 1) / 2)) * ((along > -3) & (along < 8))
+            gg = gg * (1 - w) + P.GAP_PAD * w
         g[sl] = gg
     return g
 
