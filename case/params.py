@@ -83,3 +83,9 @@ CONTACTS = [
 ]
 
 PETG_DENSITY = 1.27  # g/cm3
+
+# chosen PETG colours from 3D Pixel's palette: (name for the order, name for file names)
+PRINT_COLORS = {
+    "base": ("серый", "gray"),
+    "lid": ("белый прозрачный", "white-transparent"),
+}
