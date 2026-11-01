@@ -106,7 +106,7 @@ if __name__ == "__main__":
     render_all()
 
 
-def scheme_views(base_color, lid_color, lid_alpha=1.0, tag="custom", stage="print", open_deg=105):
+def scheme_views(base_color, lid_color, lid_alpha=1.0, tag="custom", stage="print", open_deg=105, lang="en"):
     """Closed and open GLBs of one scheme, plus a sheet of views. A lid_alpha
     below 1 hints at translucent filament (the viewer blends, snapshots may not)."""
     OUT.mkdir(parents=True, exist_ok=True)
@@ -132,10 +132,12 @@ def scheme_views(base_color, lid_color, lid_alpha=1.0, tag="custom", stage="prin
         s.apply_transform(Z_UP_TO_Y_UP)
         out[state] = OUT / f"{tag}_{state}.glb"
         s.export(out[state])
-    shots = [("closed", "iso", "спереди"), ("closed", "150:12", "сзади"), ("closed", "top", "сверху"),
-             ("closed", "90:5", "сбоку"), ("open", "iso", "открыт"), ("open", "300:45", "открыт, сверху")]
+    shots = [("closed", "iso"), ("closed", "150:12"), ("closed", "top"),
+             ("closed", "90:5"), ("open", "iso"), ("open", "300:45")]
+    titles = {"en": ["front", "back", "top", "side", "open", "open, from above"],
+              "ru": ["спереди", "сзади", "сверху", "сбоку", "открыт", "открыт, сверху"]}[lang]
     fig, axs = plt.subplots(2, 3, figsize=(18, 10))
-    for ax, (state, cam, title) in zip(axs.ravel(), shots):
+    for ax, (state, cam), title in zip(axs.ravel(), shots, titles):
         png = OUT / f"{tag}_{state}_{cam.replace(':', '_')}.png"
         subprocess.run(["cadgen", "+0.8.4", "snapshot", str(out[state]), str(png), f"--camera={cam}"],
                        check=True, capture_output=True)
@@ -143,6 +145,6 @@ def scheme_views(base_color, lid_color, lid_alpha=1.0, tag="custom", stage="prin
         ax.set_title(title, fontsize=15)
         ax.axis("off")
     plt.tight_layout()
-    sheet = OUT / f"{tag}_views.png"
+    sheet = OUT / (f"{tag}_views.png" if lang == "en" else f"{tag}_views.{lang}.png")
     plt.savefig(sheet, dpi=55)
     return out, sheet

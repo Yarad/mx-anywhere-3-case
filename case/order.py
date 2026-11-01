@@ -76,8 +76,10 @@ def build(stage="print"):
                    check=True, capture_output=True)
     glb.unlink()
 
-    sheet = P.BUILD / "colors" / "D_frosted_views.png"  # made by colors.scheme_views for the chosen scheme
-    if sheet.exists():
+    # made by colors.scheme_views for the chosen scheme; the print shop reads Russian
+    sheet = next((f for f in (P.BUILD / "colors" / "D_frosted_views.ru.png", P.BUILD / "colors" / "D_frosted_views.png")
+                  if f.exists()), None)
+    if sheet:
         shutil.copy(sheet, out / "cveta.png")
 
     with zipfile.ZipFile(P.BUILD / "mx_case_order.zip", "w", zipfile.ZIP_DEFLATED) as z:

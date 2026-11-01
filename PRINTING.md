@@ -1,61 +1,66 @@
-# Чехол MX Anywhere 3 — печать и сборка
+# MX Anywhere 3 case — printing and assembly
 
-## Файлы для печати
+**English** · [Русский](PRINTING.ru.md)
 
-Собираются командой `.venv/bin/python -m case.build print` в папку `build/print/`:
+## Print files
 
-| Файл | Что это |
+`.venv/bin/python -m case.build print` writes them to `build/print/`:
+
+| File | What it is |
 | --- | --- |
-| `mx_case_plate.3mf` | обе детали на одном столе, уже в положении для печати |
-| `mx_case_base.stl` | основание, в положении для печати |
-| `mx_case_lid.stl` | крышка, в положении для печати |
-| `bumper_map.png` | куда клеить демпферы |
+| `mx_case_plate.3mf` | both parts on one plate, already in print orientation |
+| `mx_case_base.stl` | the base, in print orientation |
+| `mx_case_lid.stl` | the lid, in print orientation |
 
-## Заказ
+The bumper map comes from `.venv/bin/python -m case.bumper_map`: `build/print/bumper_map.png` (Russian version: `bumper_map.ru.png`).
 
-`.venv/bin/python -m case.order` собирает `build/mx_case_order.zip` — его и отправлять:
+## Ordering a print
 
-| В архиве | Что это |
+`.venv/bin/python -m case.order` builds `build/mx_case_order.zip`, ready to send to a print shop:
+
+| In the zip | What it is |
 | --- | --- |
-| `mx_case_base_PETG_gray.stl` | основание — **PETG серый** |
-| `mx_case_lid_PETG_white-transparent.stl` | крышка — **PETG белый прозрачный** |
-| `zakaz.txt` | текст заказа: цвета, положение на столе, поддержки, настройки |
-| `na_stole.png`, `cveta.png` | как детали лежат на столе и как выглядит готовый чехол |
+| `mx_case_base_PETG_gray.stl` | the base — **grey PETG** |
+| `mx_case_lid_PETG_white-transparent.stl` | the lid — **translucent white PETG** |
+| `zakaz.txt` | the order text: colours, orientation on the bed, supports, settings (in Russian) |
+| `na_stole.png`, `cveta.png` | the parts as they lie on the bed, and the finished case |
 
-Цвета заданы в `case/params.py` (`PRINT_COLORS`). STL не хранит цвет, поэтому он в названии файла и в тексте заказа. Детали разных цветов печатаются отдельными заданиями.
+The colours are set in `case/params.py` (`PRINT_COLORS`). An STL has no colour, so it goes into the file name and the order text. Parts in different colours are printed as separate jobs.
 
-## Для 3D Pixel
+## Print settings
 
-- **Материал:** PETG.
-- **Принтер:** многоцветный 256 × 256 × 256 (Bambu); обе детали помещаются и на 220 × 220.
-- **Сопло / слой:** 0.4 мм / 0.2 мм.
-- **Стенки:** 3 периметра, заполнение 100 % — детали тонкие, это фактически сплошной пластик.
-- **Основание:** лежит дном на столе. Поддержки **не нужны**.
-- **Крышка:** лежит плоским краем (плоскостью разъёма) на столе, куполом вверх. Нужны **древовидные поддержки только от стола** (support on build plate only) — они растут внутри купола и держат рёбра сетки снизу. Снаружи крышки поддержек быть не должно.
-- **Отверстия петли** имеют каплевидный верх и печатаются без поддержек.
-- Ориентацию не менять: в файлах она уже правильная.
+- **Material:** PETG.
+- **Printer:** anything with a 220 × 220 mm bed or larger; both parts fit on one plate.
+- **Nozzle / layer:** 0.4 mm / 0.2 mm.
+- **Walls:** 3 perimeters, 100 % infill — the parts are thin, so they are practically solid anyway.
+- **Base:** flat bottom on the bed. **No supports.**
+- **Lid:** flat rim (the parting plane) on the bed, dome up. **Tree supports from the build plate only** — they grow inside the dome and hold the lattice ribs from below. There must be no supports on the outside of the lid.
+- **Hinge holes** have a teardrop top and print without supports.
+- Do not change the orientation: the files already have the right one.
 
-## Что купить
+## What to buy
 
-| Что | Сколько |
+| What | How many |
 | --- | --- |
-| Магниты неодимовые, диск 6 × 2 мм | 4 шт |
-| Пруток / винт Ø 3 мм, длина 40 мм (винт M3 × 40, стальной пруток или спица) | 1 шт |
-| Демпферы силиконовые самоклеящиеся Ø 6 × 2 мм | 12 шт |
-| Демпфер Ø 4–5 × 2 мм (или кусочек того же) на носик перед колесом | 1 шт |
-| Клей: цианоакрилат («супер-клей») или эпоксидка | для магнитов |
+| Neodymium disc magnets 6 × 2 mm | 4 |
+| Rod or screw Ø 3 mm, 40 mm long (M3 × 40 screw, steel rod or knitting needle) | 1 |
+| Self-adhesive silicone bumpers Ø 6 × 2 mm | 12 |
+| Bumper Ø 4–5 × 2 mm (or a piece of one) for the nose in front of the wheel | 1 |
+| Glue: cyanoacrylate (super glue) or epoxy | for the magnets |
 
-## Сборка
+## Assembly
 
-1. **Магниты.** В задних углах крышки и основания по гнезду Ø 6.2 мм. Сложите все 4 магнита в один столбик и пометьте маркером верхнюю сторону каждого. В основание вклейте их **помеченной стороной наружу** (к линии разъёма), в крышку — **помеченной стороной внутрь гнезда** (ко дну). Проверьте, что крышка притягивается, пока клей не схватился.
-2. **Петля.** Совместите проушины крышки и основания и вставьте пруток: в проушинах основания он сидит плотно (Ø 3.0), в проушинах крышки вращается свободно (Ø 3.25). Если сел слишком туго — пройдите отверстия крышки сверлом 3.2–3.3 мм.
-3. **Демпферы** — по карте `bumper_map.png`: 8 шт в основании, 5 шт в крышке. Каждый клеится на утолщённый узел сетки или на сплошную стенку точно под своим номером. Мышь касается чехла только через них; остальная поверхность — в 1.7 мм от мыши.
+1. **Magnets.** There is a Ø 6.2 mm pocket in each back corner of the lid and of the base. Stack all 4 magnets in one column and mark the top face of each. Glue them into the base **marked face out** (towards the parting line) and into the lid **marked face into the pocket** (towards its bottom). Check that the lid pulls shut before the glue sets.
+2. **Hinge.** Line up the knuckles of the lid and the base and push the rod through: it is a press fit in the base knuckles (Ø 3.0) and turns freely in the lid knuckles (Ø 3.25). If it is too tight, run a 3.2–3.3 mm drill through the lid holes.
+3. **Bumpers** — following the map below: 8 in the base, 5 in the lid. Each one goes on a thickened lattice node or on solid wall, right at its number. The mouse touches the case only through them; everything else is 1.7 mm away from the mouse.
 
-## Параметры, если что-то не подошло
+![Bumper map](docs/bumper_map.png)
 
-Всё в `case/params.py` и `case/lattice.py`, пересборка одной командой:
+## If something does not fit
 
-- другой пруток — `PIN_HOLE_LID`, `PIN_HOLE_BASE`;
-- другие демпферы (высота) — `GAP`, `GAP_PAD` (зазор = высота демпфера − 0.3 мм);
-- тугой или свободный бортик — `LIP_CLEAR`;
-- другие магниты — `MAG_D`, `MAG_DEPTH`.
+Everything is in `case/params.py` and `case/lattice.py`, rebuilt with one command:
+
+- a different rod — `PIN_HOLE_LID`, `PIN_HOLE_BASE`;
+- different bumpers (height) — `GAP`, `GAP_PAD` (gap = bumper height − 0.3 mm);
+- a lip that is too tight or too loose — `LIP_CLEAR`;
+- different magnets — `MAG_D`, `MAG_DEPTH`.

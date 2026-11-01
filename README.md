@@ -1,5 +1,7 @@
 # MX Anywhere 3 case
 
+**English** · [Русский](README.ru.md)
+
 A 3D-printable hard carry case for the Logitech MX Anywhere 3 mouse. Its one job: when the mouse is thrown into a backpack, nothing presses its buttons.
 
 ![The case: closed and open, lid in translucent white PETG, base in grey](docs/case_views.png)
@@ -52,7 +54,7 @@ All dimensions (gaps, hinge, magnets, lip, rib profile, cell sizes) live in `cas
 - **Lid**: rim on the bed, dome up; tree supports from the build plate only (they grow inside the dome).
 - PETG, 0.4 mm nozzle, 0.2 mm layers, 3 walls, 100 % infill.
 
-Parts you need: 4 magnets 6 × 2 mm, a 3 mm rod 40 mm long (an M3 × 40 screw works), 13 silicone bumpers 6 × 2 mm. Assembly and the order text for the print shop are in [PRINTING.md](PRINTING.md) (in Russian).
+Parts you need: 4 magnets 6 × 2 mm, a 3 mm rod 40 mm long (an M3 × 40 screw works), 13 silicone bumpers 6 × 2 mm. Print settings, assembly and the order package for a print shop are in [PRINTING.md](PRINTING.md).
 
 ![Where the bumpers go](docs/bumper_map.png)
 

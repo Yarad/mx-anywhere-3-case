@@ -1,7 +1,7 @@
 """Where to glue the bumpers: a shaded look into the base from above and into the
 lid from below (as you hold it opened), with every contact numbered.
 
-Run:  .venv/bin/python -m case.bumper_map [stage]
+Run:  .venv/bin/python -m case.bumper_map [stage]   (writes the English and the Russian map)
 """
 import sys
 
@@ -16,12 +16,29 @@ from . import fields as F  # noqa: E402
 from . import form  # noqa: E402
 from . import params as P  # noqa: E402
 
-LABELS = {
-    "nose": "носик перед колесом", "strip": "полоса за SmartShift", "back_l": "сзади сбоку",
-    "back_r": "сзади сбоку", "back_c": "сзади по центру", "foot_fl": "под передней ножкой",
-    "foot_fr": "под передней ножкой", "foot_bl": "под задней ножкой",
-    "foot_br": "под задней ножкой", "side_l": "бок", "side_r": "бок",
-    "front_l": "перёд, рядом с USB-C", "front_r": "перёд, рядом с USB-C",
+TEXT = {
+    "en": {
+        "labels": {
+            "nose": "nose in front of the wheel", "strip": "strip behind SmartShift", "back_l": "back, side",
+            "back_r": "back, side", "back_c": "back, centre", "foot_fl": "under a front foot",
+            "foot_fr": "under a front foot", "foot_bl": "under a back foot", "foot_br": "under a back foot",
+            "side_l": "side", "side_r": "side", "front_l": "front, next to USB-C", "front_r": "front, next to USB-C",
+        },
+        "nose_size": " (Ø 4–5 mm)", "base": "Base — looking in from above",
+        "lid": "Lid opened forward — looking in from above", "hinge": "hinge", "side": "side-\nbutton\nside",
+        "title": "Bumper map: self-adhesive silicone bumpers Ø 6 × 2 mm, 13 pcs",
+    },
+    "ru": {
+        "labels": {
+            "nose": "носик перед колесом", "strip": "полоса за SmartShift", "back_l": "сзади сбоку",
+            "back_r": "сзади сбоку", "back_c": "сзади по центру", "foot_fl": "под передней ножкой",
+            "foot_fr": "под передней ножкой", "foot_bl": "под задней ножкой", "foot_br": "под задней ножкой",
+            "side_l": "бок", "side_r": "бок", "front_l": "перёд, рядом с USB-C", "front_r": "перёд, рядом с USB-C",
+        },
+        "nose_size": " (Ø 4–5 мм)", "base": "Основание — вид сверху внутрь",
+        "lid": "Крышка, откинутая вперёд — вид сверху внутрь", "hinge": "петля", "side": "сторона\nбоковых\nкнопок",
+        "title": "Карта демпферов: силиконовые самоклеящиеся Ø 6 × 2 мм, 13 шт",
+    },
 }
 
 
@@ -40,12 +57,12 @@ def shaded(mesh, from_below, step=0.25):
     return img.reshape(X.shape), [xs[0], xs[-1], ys[0], ys[-1]]
 
 
-def draw(stage="print"):
+def draw(stage="print", lang="en", out=None):
     d = P.BUILD / stage
+    t = TEXT[lang]
     contacts = F.contact_points()
     fig, axs = plt.subplots(1, 2, figsize=(14, 12.5))
-    for ax, part, below, title in [(axs[0], "base", False, "Основание — вид сверху внутрь"),
-                                   (axs[1], "lid", True, "Крышка, откинутая вперёд — вид сверху внутрь")]:
+    for ax, part, below, title in [(axs[0], "base", False, t["base"]), (axs[1], "lid", True, t["lid"])]:
         m = trimesh.load(P.BUILD / "stage2" / f"{part}.stl") if not (d / f"{part}.stl").exists() \
             else trimesh.load(d / f"{part}.stl")
         img, ext = shaded(m, below)
@@ -62,23 +79,24 @@ def draw(stage="print"):
             ax.add_patch(plt.Circle((x, y), dia / 2, fill=False, color="#D85A30", lw=2.5))
             ax.annotate(str(i), (x, y), xytext=(x + 6, y + 3), color="#D85A30", fontsize=15,
                         fontweight="bold", arrowprops=dict(arrowstyle="-", color="#D85A30", lw=1))
-            ax.text(0.02, -0.04 - 0.035 * k, f"{i} — {LABELS[name]}" + (" (Ø 4–5 мм)" if name == "nose" else ""),
+            ax.text(0.02, -0.04 - 0.035 * k, f"{i} — {t['labels'][name]}" + (t["nose_size"] if name == "nose" else ""),
                     transform=ax.transAxes, fontsize=12, color="#712B13", va="top")
             k += 1
         hinge_y = 1.0 if below else 0.0
-        ax.text(0.5, hinge_y + (0.01 if below else -0.015), "петля", transform=ax.transAxes, ha="center",
+        ax.text(0.5, hinge_y + (0.01 if below else -0.015), t["hinge"], transform=ax.transAxes, ha="center",
                 va="bottom" if below else "top", fontsize=12, color="#5F5E5A")
-        ax.text(1.0, 0.5, "сторона\nбоковых\nкнопок", transform=ax.transAxes, ha="left", va="center",
+        ax.text(1.0, 0.5, t["side"], transform=ax.transAxes, ha="left", va="center",
                 fontsize=11, color="#5F5E5A")
         ax.set_title(title, fontsize=14, pad=22)
         ax.set_aspect("equal")
         ax.axis("off")
-    plt.suptitle("Карта демпферов: силиконовые самоклеящиеся Ø 6 × 2 мм, 13 шт", fontsize=16)
+    plt.suptitle(t["title"], fontsize=16)
     plt.subplots_adjust(left=0.03, right=0.92, top=0.9, bottom=0.25, wspace=0.25)
-    out = d / "bumper_map.png"
+    out = out or d / ("bumper_map.png" if lang == "en" else f"bumper_map.{lang}.png")
     plt.savefig(out, dpi=80)
     print(out)
 
 
 if __name__ == "__main__":
-    draw(*sys.argv[1:])
+    for lang in TEXT:
+        draw(*sys.argv[1:], lang=lang)
