@@ -1,0 +1,10 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "cad-viewer",
+      "url": "http://127.0.0.1:3251",
+      "port": 3251
+    }
+  ]
+}
