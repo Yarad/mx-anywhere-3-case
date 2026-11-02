@@ -1,8 +1,8 @@
 """Light preview GLBs of a build stage for the viewer: simplified meshes, closed and open.
-Also the closed and open case as plain STLs for GitHub's 3D viewer, in docs/3d.
+Also the closed and open case as plain STLs for GitHub's 3D viewer, in mice/<mouse>/3d.
 
-Run:  .venv/bin/python -m case.preview [stage]
-      .venv/bin/python -m case.preview github
+Run:  .venv/bin/python -m case <mouse> preview [stage]
+      .venv/bin/python -m case <mouse> preview github
 """
 import sys
 
@@ -48,7 +48,7 @@ def github(stage="print", open_deg=105, limit=9.5e6):
     """One STL per state with both parts, coarsened just enough to stay under
     GitHub's 10 MB display limit. No mouse: the scan is not ours to publish."""
     d = P.BUILD / stage
-    out = P.ROOT / "docs" / "3d"
+    out = P.DIR / "3d"
     out.mkdir(parents=True, exist_ok=True)
     ms = [hinge.to_manifold(trimesh.load(d / f"{k}.stl")) for k in ("base", "lid")]
     for tol in (0.04, 0.05, 0.06, 0.08, 0.1):

@@ -108,7 +108,7 @@ def mouse_sdf(grid):
             shell[sl] = np.isfinite(d).reshape(X.shape)
         filled = ndimage.binary_fill_holes(shell)
         return _signed_from_samples(grid, pts, normals, lambda sl: filled[sl])
-    return _cached("mouse", [P.SCAN.stat().st_size, grid.h, list(grid.lo), list(grid.n)], compute)
+    return _cached("mouse", [P.SCAN.name, P.SCAN.stat().st_size, grid.h, list(grid.lo), list(grid.n)], compute)
 
 
 def outer_sdf(grid):
@@ -122,6 +122,8 @@ def outer_sdf(grid):
         normals = np.nan_to_num(np.asarray(surf.vertex_normals))
         return _signed_from_samples(grid, v, normals, lambda sl: F[sl] < 0, plane_near=1.5)
     key = [form.PLAN, form.PROFILE_LOWER, form.PROFILE_UPPER, form.SECTION, grid.h, list(grid.lo), list(grid.n)]
+    if form.PLAN_LEFT:
+        key.append(form.PLAN_LEFT)
     return _cached("outer", key, compute)
 
 
@@ -135,13 +137,18 @@ def contact_points():
         if kind == "bottom":
             out.append((name, np.array([a, b, P.TABLE_Z]), np.array([0, 0, -1.0]), r))
             continue
+        lo, hi = m.bounds[0] - 10, m.bounds[1] + 10  # rays start outside the mouse
         if kind == "top":
-            o, d = [a, b, 60.0], [0, 0, -1.0]
+            o, d = [a, b, hi[2]], [0, 0, -1.0]
         elif kind == "side":
-            o, d = [70.0 * a, b, c], [-a, 0, 0]
-        else:  # front
-            o, d = [a, -80.0, c], [0, 1.0, 0]
+            o, d = [(hi[0] if a > 0 else lo[0]), b, c], [-a, 0, 0]
+        elif kind == "front":
+            o, d = [a, lo[1], c], [0, 1.0, 0]
+        else:  # back
+            o, d = [a, hi[1], c], [0, -1.0, 0]
         loc, _, tri = m.ray.intersects_location([o], [d], multiple_hits=False)
+        if not len(loc):
+            raise SystemExit(f"contact {name}: the {kind} ray at {a, b, c} misses the mouse")
         # smoothed normal: plane through the scan's neighbourhood, facing the ray
         near = m.vertices[np.linalg.norm(m.vertices - loc[0], axis=1) < 3.0]
         n = trimesh.points.plane_fit(near)[1]
@@ -155,14 +162,23 @@ def _smooth_step(t):
     return t * t * (3 - 2 * t)
 
 
+def zone_gap(X, Y, Z):
+    """Gap wanted at points on the mouse: GAP, more inside the button zones."""
+    ramp = lambda s: _smooth_step(s / 1.5)  # 1.5 mm soft edge
+    gg = np.full(np.shape(X), P.GAP)
+    for b in P.BUTTONS:  # a soft box per button zone
+        w = 1.0
+        for A, (lo, hi) in zip((X, Y, Z), (b["x"], b["y"], b["z"])):
+            w = w * ramp(A - lo) * ramp(hi - A)
+        gg = np.maximum(gg, P.GAP + (b["gap"] - P.GAP) * w)
+    return gg
+
+
 def gap_field(grid, contacts):
     """Wanted gap between mouse and case, attached to the mouse's features."""
     g = np.empty(grid.shape, np.float32)
     for sl, X, Y, Z in grid.chunks():
-        ramp = lambda s: _smooth_step(s / 1.5)  # 1.5 mm soft edge
-        top = ramp(15 - Y) * ramp(Z - 10) * ramp(28.5 - np.abs(X))
-        side = ramp(X - 26.5) * ramp(Y + 27) * ramp(-2 - Y) * ramp(Z - 13) * ramp(25 - Z)
-        gg = P.GAP + np.maximum((P.GAP_BUTTONS - P.GAP) * top, (P.GAP_SIDE_BUTTONS - P.GAP) * side)
+        gg = zone_gap(X, Y, Z)
         for _, p, n, r in contacts:
             q = np.stack([X - p[0], Y - p[1], Z - p[2]], -1)
             along = q @ n

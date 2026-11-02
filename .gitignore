@@ -6,3 +6,6 @@ __pycache__/
 
 # third-party scan of the mouse, not redistributed (see README)
 Logitech MX Anywhere 3.stl
+
+# a mouse's scan in the case frame: commit it only if its licence allows (stand-ins are rebuilt)
+mice/*/mouse.stl

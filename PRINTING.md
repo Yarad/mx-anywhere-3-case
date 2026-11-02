@@ -4,7 +4,7 @@
 
 ## Print files
 
-Ready-made files are attached to [the latest release](https://github.com/Yarad/mx-anywhere-3-case/releases/latest). To build them yourself, `.venv/bin/python -m case.build print` writes them to `build/print/`:
+Ready-made files are attached to [the latest release](https://github.com/Yarad/mx-anywhere-3-case/releases/latest). To build them yourself, `.venv/bin/python -m case mx-anywhere-3 build print` writes them to `build/mx-anywhere-3/print/` (for another mouse, its folder name in `mice/`):
 
 | File | What it is |
 | --- | --- |
@@ -12,20 +12,20 @@ Ready-made files are attached to [the latest release](https://github.com/Yarad/m
 | `mx_case_base.stl` | the base, in print orientation |
 | `mx_case_lid.stl` | the lid, in print orientation |
 
-The bumper map comes from `.venv/bin/python -m case.bumper_map`: `build/print/bumper_map.png` (Russian version: `bumper_map.ru.png`).
+The bumper map comes from `.venv/bin/python -m case mx-anywhere-3 bumper_map`: `build/mx-anywhere-3/print/bumper_map.png` (Russian version: `bumper_map.ru.png`).
 
 ## Ordering a print
 
-`mx_case_order.zip` from the release (or `.venv/bin/python -m case.order`, which builds `build/mx_case_order.zip`) is ready to send to a print shop:
+The order zip from the release (or `.venv/bin/python -m case mx-anywhere-3 order`, which builds `build/mx-anywhere-3/mx-anywhere-3_case_order.zip`) is ready to send to a print shop:
 
 | In the zip | What it is |
 | --- | --- |
-| `mx_case_base_PETG_gray.stl` | the base — **grey PETG** |
-| `mx_case_lid_PETG_white-transparent.stl` | the lid — **translucent white PETG** |
+| `case_base_PETG_gray.stl` | the base — **grey PETG** |
+| `case_lid_PETG_white-transparent.stl` | the lid — **translucent white PETG** |
 | `zakaz.txt` | the order text: colours, orientation on the bed, supports, settings (in Russian) |
 | `na_stole.png`, `cveta.png` | the parts as they lie on the bed, and the finished case |
 
-The colours are set in `case/params.py` (`PRINT_COLORS`). An STL has no colour, so it goes into the file name and the order text. Parts in different colours are printed as separate jobs.
+The colours are `[design] colors` in the mouse's `case.toml` (names from `case/colors.py`), and the order's language is `[print] order_language` (`ru` or `en`; in English the files are `order.txt`, `on_the_bed.png`, `finished_case.png`). An STL has no colour, so it goes into the file name and the order text. Parts in different colours are printed as separate jobs.
 
 ## Print settings
 
@@ -58,9 +58,9 @@ The colours are set in `case/params.py` (`PRINT_COLORS`). An STL has no colour, 
 
 ## If something does not fit
 
-Everything is in `case/params.py` and `case/lattice.py`, rebuilt with one command:
+Change the mouse's `case.toml` (defaults with comments are in `case/defaults.toml`) and rebuild with one command:
 
-- a different rod — `PIN_HOLE_LID`, `PIN_HOLE_BASE`;
-- different bumpers (height) — `GAP`, `GAP_PAD` (gap = bumper height − 0.3 mm);
-- a lip that is too tight or too loose — `LIP_CLEAR`;
-- different magnets — `MAG_D`, `MAG_DEPTH`.
+- a different rod — `[parts] rod` (the lid's holes are 0.25 mm wider: `[tech] rod_play`);
+- different bumpers — `[parts] bumper` (the gap is the bumper's height − 0.3 mm);
+- a lip that is too tight or too loose — `[tech] lip_clear`;
+- different magnets — `[parts] magnet`.

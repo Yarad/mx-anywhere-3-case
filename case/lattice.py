@@ -20,19 +20,17 @@ from scipy.spatial import cKDTree
 from . import form
 from . import params as P
 
-RIB_W = 3.6          # rib width at full width, just under the outer chamfer
-RIB_CHAMFER = 0.8    # outer chamfer
-RIB_INNER_CHAMFER = 0.5
-RIB_TAPER = 0.8 / 5.2  # half-width lost per mm of depth (3.6 -> 2.0 over 6 mm)
-RIB_MIN = 2.0         # the wedge never gets thinner than this
-RIB_MIN_FACE = 1.0    # inner face left after the inner chamfer
-CELL_OPEN = 11.0     # seed spacing of the lattice
-CELL_HINGE = 5.0     # seed spacing right at the hinge
-HINGE_REACH = 52.0   # distance from the hinge axis over which cells grow to CELL_OPEN
-HINGE_CURVE = 0.8    # < 1: cells stay large longer and shrink only close to the hinge
-MAX_DEPTH_OPEN = 8.0  # ribs reach in towards the mouse at most this far
-SKIN_SOLID = 3.0      # solid areas are a skin this thick
-NODE_FAT = 1.3        # extra rib half-width at a contact node
+RIB_W, RIB_CHAMFER, RIB_INNER_CHAMFER, RIB_MIN_FACE = P.RIB_W, P.RIB_CHAMFER, P.RIB_INNER_CHAMFER, P.RIB_MIN_FACE
+MAX_DEPTH_OPEN, SKIN_SOLID, NODE_FAT = P.MAX_DEPTH_OPEN, P.SKIN_SOLID, P.NODE_FAT
+# rib cross-sections: depth where the taper starts, half-width lost per mm deeper, narrowest rib
+RIBS = {
+    "wedge": (RIB_CHAMFER, 0.8 / 5.2, 2.0),      # narrows inward: 3.6 -> 2.0 over 6 mm
+    "octagon": (RIB_CHAMFER, 0.0, RIB_W),        # full width all the way in
+    "keel": (RIB_CHAMFER + 1.6, 1.0, 1.6),       # octagon outside, a 45 degree step, then a thin web
+}
+TAPER_FROM, RIB_TAPER, RIB_MIN = RIBS[P.RIB]
+Y0, LENGTH = form.Y_FRONT - 0.5, form.Y_BACK - form.Y_FRONT  # composition runs nose -> back
+Z0, HEIGHT = form.Z_BOTTOM, round(form.Z_TOP - form.Z_BOTTOM, 6)  # and bottom -> top
 
 
 def smooth_step(a, b, t):
@@ -45,27 +43,55 @@ def hinge_distance(p):
     return np.hypot(p[..., 1] - P.HINGE_Y, p[..., 2] - za)
 
 
-def composition(p, magnets):
-    """'Heel': solid at the back and the bottom, opening diagonally towards the
-    nose and the top. Plus solid spots for the hinge and magnets and a belt
-    along the parting plane. Returns s in [0, 1], 1 = solid."""
+def composition(p, magnets, contacts=()):
+    """Where the wall is solid: s in [0, 1], 1 = solid. The design's large-scale
+    pattern (heel, tail, bottom, belt or none for bone), plus what every case
+    needs solid: a belt along the parting plane, the hinge and the magnets."""
     x, y, z = p[..., 0], p[..., 1], p[..., 2]
-    # steep enough diagonal that the solid heel wraps over the back edge of the lid
-    u = 0.62 * (y + 56) / 112 + 0.38 * (1 - (z + 4.6) / 43.6)
-    s = smooth_step(0.42, 0.82, u)
-    belt = np.exp(-(form.plane_distance(y, z) / 3.5) ** 2)
-    hinge = np.exp(-((hinge_distance(p) / 9) ** 2)) * (np.abs(x) < 26)
+    uy = (y - Y0) / LENGTH       # 0 at the nose, 1 at the back
+    uz = (z - Z0) / HEIGHT       # 0 at the bottom, 1 at the top
+    belt_w = 3.5
+    if P.COMPOSITION == "heel":  # steep enough diagonal that the solid heel wraps over the back edge of the lid
+        s = smooth_step(0.42, 0.82, 0.62 * (y - Y0) / LENGTH + 0.38 * (1 - (z - Z0) / HEIGHT))
+    elif P.COMPOSITION == "tail":
+        s = smooth_step(0.6, 0.95, uy)
+    elif P.COMPOSITION == "bottom":
+        s = smooth_step(0.55, 0.9, 1 - uz)
+    else:  # bone, belt
+        s = np.zeros_like(uy)
+        belt_w = 8.0 if P.COMPOSITION == "belt" else belt_w
+    belt = np.exp(-(form.plane_distance(y, z) / belt_w) ** 2)
+    hinge = np.exp(-((hinge_distance(p) / 9) ** 2)) * (np.abs(x) < P.KNUCKLE_SPAN / 2 + 6)
     s = np.maximum.reduce([s, belt, hinge])
     for c in magnets:
         s = np.maximum(s, np.exp(-(np.linalg.norm(p - c, axis=-1) / 7) ** 2))
+    if P.COMPOSITION == "bone":  # solid islands under the bumpers too
+        for _, c, _, r in contacts:
+            s = np.maximum(s, np.exp(-(np.linalg.norm(p - c, axis=-1) / (r + 4)) ** 2))
     return np.clip(s, 0, 1)
 
 
+def button_distance(p):
+    """Distance from points to the nearest button zone."""
+    d = np.full(p.shape[:-1], np.inf)
+    for b in P.BUTTONS:
+        out = [np.maximum.reduce([lo - p[..., i], p[..., i] - hi, np.zeros(p.shape[:-1])])
+               for i, (lo, hi) in enumerate((b["x"], b["y"], b["z"]))]
+        d = np.minimum(d, np.sqrt(sum(o ** 2 for o in out)))
+    return d
+
+
 def cell_size(p, magnets):
-    """Seed spacing: large everywhere, smaller only towards the hinge. Solid
-    areas keep large cells; their holes close up instead (see half_width)."""
-    t = np.clip((hinge_distance(p) - 8) / HINGE_REACH, 0, 1) ** HINGE_CURVE
-    return CELL_HINGE + (CELL_OPEN - CELL_HINGE) * t
+    """Seed spacing: cell_open, shrinking to cell_fine towards the hinge or over
+    the buttons. Solid areas keep large cells; their holes close up instead
+    (see half_width)."""
+    if P.FINE_NEAR == "hinge":
+        t = np.clip((hinge_distance(p) - 8) / P.FINE_REACH, 0, 1) ** P.FINE_CURVE
+    elif P.FINE_NEAR == "buttons" and P.BUTTONS:
+        t = np.clip((button_distance(p) - 4) / (P.FINE_REACH / 2), 0, 1) ** P.FINE_CURVE
+    else:
+        t = np.ones(p.shape[:-1])
+    return P.CELL_FINE + (P.CELL_OPEN - P.CELL_FINE) * t
 
 
 def contact_nodes(surface, contacts, magnets):
@@ -75,7 +101,7 @@ def contact_nodes(surface, contacts, magnets):
     for name, q, n, r in contacts:
         p, _, tri = trimesh.proximity.closest_point(surface, [q])
         p = p[0]
-        if composition(p, magnets) > 0.5:
+        if composition(p, magnets, contacts) > 0.5:
             continue
         nodes.append((name, p, surface.face_normals[tri[0]], r))
     return nodes
@@ -139,6 +165,6 @@ def half_width(depth, inner, s, extra=0.0):
     inner face. Grows without bound as s -> 1."""
     w = RIB_W / 2 + extra + 12.0 * smooth_step(0.55, 1.0, s)
     outer = w - RIB_CHAMFER + depth
-    wedge = np.maximum(w - np.maximum(depth - RIB_CHAMFER, 0) * RIB_TAPER, RIB_MIN / 2)  # deep ribs stop narrowing
+    wedge = np.maximum(w - np.maximum(depth - TAPER_FROM, 0) * RIB_TAPER, RIB_MIN / 2)  # deep ribs stop narrowing
     inner_face = np.maximum(wedge - RIB_INNER_CHAMFER, RIB_MIN_FACE / 2) + inner
     return np.minimum.reduce([outer, wedge, inner_face])

@@ -1,0 +1,39 @@
+# Geometry derived from the mouse. `python -m case <mouse> fit` writes this file;
+# this one was drawn by hand for the MX Anywhere 3 and is kept as it is.
+
+grid_min = [-41.0, -62.0, -7.0]
+grid_max = [41.0, 61.0, 42.5]
+part_z0 = 14.0          # parting plane z = part_z0 + part_slope * y
+part_slope = 0.12
+hinge_y = -54.5
+knuckle_span = 40.0
+lip_front_y = 22.0      # the lip runs only behind this y: the side walls are too thin for lip, groove and skirt
+magnet_x = [4.0, 36.0]  # where the magnets may go along the back of the rim (right side, mirrored)
+magnet_y = [15.0, 56.0]
+magnet_pick = "room"    # the spot with the most material around it
+
+[form]
+# plan: top-view outline, right half from the front tip to the back tip (x, y)
+plan = [
+  [[0, -55.5], [18, -55.5], [28.5, -53], [32, -45]],
+  [[32, -45], [34.5, -39], [35.4, -26], [35.8, -10]],
+  [[35.8, -10], [36.1, 5], [37.5, 15], [37, 25]],
+  [[37, 25], [38, 46], [32, 56.5], [0, 56.5]],
+]
+# side view (y, z): front tip -> along the bottom -> back tip, and back over the top to the front
+profile_lower = [
+  [[-55.5, 7.5], [-55.5, 0], [-52, -4.6], [-46, -4.6]],
+  [[-46, -4.6], [-20, -4.6], [20, -4.6], [43, -4.6]],
+  [[43, -4.6], [51.5, -4.6], [56.5, 8], [56.5, 19]],
+]
+profile_upper = [
+  [[56.5, 19], [56.5, 30], [46.5, 39], [15, 39]],
+  [[15, 39], [-15, 39], [-32, 33.5], [-45, 22.5]],
+  [[-45, 22.5], [-52, 16.5], [-55.5, 12], [-55.5, 7.5]],
+]
+# front-view cross-section, normalised right half u(v), bottom (v = 0) -> top (v = 1);
+# leaves the bed at 45 degrees so the bottom edge prints without support
+section = [
+  [[0.8, 0.0], [0.87, 0.06], [1.0, 0.188], [1.0, 0.424]],
+  [[1.0, 0.424], [1.0, 0.753], [0.693, 1.0], [0.0, 1.0]],
+]

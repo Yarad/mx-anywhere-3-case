@@ -1,91 +1,137 @@
-"""Parameters of the MX Anywhere 3 carry case.
+"""Parameters of a carry case, read from the mouse's folder:
 
-All lengths are millimetres in the frame of the mouse scan: front of the mouse
-(USB-C, wheel) at -Y, left side with the side buttons at +X, the table plane the
-feet stand on at z = TABLE_Z.
+  mice/<mouse>/case.toml     the mouse (mesh, buttons, contacts) and the design choices
+  mice/<mouse>/derived.toml  geometry computed from the mouse (`python -m case <mouse> fit`)
+  case/defaults.toml         everything not set in case.toml
+
+The mouse is picked by the MOUSE_CASE environment variable; `python -m case <mouse> ...`
+sets it. All lengths are millimetres in the case frame: front of the mouse at -Y, top
+at +Z, the user's left (thumb side of a right-handed mouse) at +X, the table the feet
+stand on at z = TABLE_Z.
 """
+import json
+import os
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SCAN = ROOT / "Logitech MX Anywhere 3.stl"
-BUILD = ROOT / "build"
-CACHE = BUILD / "cache"
-SEEDS_FILE = ROOT / "case" / "approved_seeds.npy"  # delete to re-roll the lattice
+MICE = ROOT / "mice"
+MOUSE = os.environ.get("MOUSE_CASE", "mx-anywhere-3")
+DIR = MICE / MOUSE
+BUILD = ROOT / "build" / MOUSE
+CACHE = ROOT / "build" / "cache"
+SEEDS_FILE = DIR / "seeds.npy"  # the approved lattice layout; delete to re-roll
 
-TABLE_Z = -0.57
 
-# --- SDF grid -----------------------------------------------------------------
-VOXEL = 0.3
-VOXEL_PRINT = 0.2
-GRID_MIN = (-41.0, -62.0, -7.0)
-GRID_MAX = (41.0, 61.0, 42.5)
+def merge(a, b):
+    out = dict(a)
+    for k, v in b.items():
+        out[k] = merge(out[k], v) if isinstance(v, dict) and isinstance(out.get(k), dict) else v
+    return out
 
-# --- gaps between the mouse and the case ----------------------------------------
-GAP = 1.7            # default: the mouse touches only the 2 mm bumpers (0.3 mm squeeze)
-GAP_BUTTONS = 3.0    # over wheel, SmartShift, left/right buttons
-GAP_SIDE_BUTTONS = 2.5  # side buttons: pressed sideways, stiff wall right next to them
-GAP_PAD = 1.7        # at contacts inside button zones (strip, nose): back to the bumper gap
-MAX_WALL = 4.5       # stage 1: wall is capped this far in from the outer surface
-RIM_BAND = 6.0       # full wall thickness this far either side of the parting plane
 
-# --- parting plane z = PART_Z0 + PART_SLOPE * y ----------------------------------
-PART_Z0 = 14.0
-PART_SLOPE = 0.12
+def load(path):
+    return tomllib.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
 
-# --- lip on the base, along the sides and the back -------------------------------
-LIP_H = 2.5
-LIP_T = 1.4
-LIP_CLEAR = 0.2
-LIP_CHAMFER = 0.6
-LIP_FRONT_Y = 22.0   # lip only around the back third: the walls along the sides are too thin
-                     # for lip + groove + skirt; the hinge keeps the front aligned
-LIP_MAGNET_KEEPOUT = 5.0
 
-# --- hinge -----------------------------------------------------------------------
-PIN_HOLE_LID = 3.25   # free fit: lid knuckles turn on the rod
-PIN_HOLE_BASE = 3.0   # press fit: the base holds the rod
-KNUCKLE_R = 3.5
-KNUCKLE_SPAN = 40.0   # total length along x
-KNUCKLE_N = 5         # odd knuckles (1, 3, 5) belong to the base, even to the lid
-KNUCKLE_GAP = 0.4
-KNUCKLE_CLEAR = 0.4
-KNUCKLE_LEAF = 5.0    # how far the knuckle's web reaches back into the wall
-HINGE_Y = -54.5
-OPEN_SWEEP_DEG = 120  # base is cleared for the lid knuckles up to this angle
-LID_SWEEP_DEG = 50    # lid cavity is swept around the mouse up to this angle
-LID_SWEEP_STEP = 2.5
+if not (DIR / "case.toml").exists():
+    raise SystemExit(f"no mouse '{MOUSE}': {DIR / 'case.toml'} is missing (python -m case new ...)")
+CONFIG = merge(load(ROOT / "case" / "defaults.toml"), load(DIR / "case.toml"))
+if os.environ.get("CASE_DESIGN"):  # one-off design changes, as JSON: how option sheets try the choices
+    CONFIG = merge(CONFIG, {"design": json.loads(os.environ["CASE_DESIGN"])})
+DERIVED = load(DIR / "derived.toml")
+_m, _d, _p, _t = CONFIG["mouse"], CONFIG["design"], CONFIG["parts"], CONFIG["tech"]
 
-# --- magnets 6 x 2 mm in open, glued pockets ---------------------------------------
-MAG_D = 6.2
-MAG_DEPTH = 2.1
-MAG_SKIN = 0.4  # one 0.4 mm extrusion line around the pocket
+# --- the mouse ---------------------------------------------------------------------
+NAME = _m["name"]
+SCAN = ROOT / _m["mesh"]
+TABLE_Z = _m.get("table_z", 0.0)
+BUTTONS = _m.get("buttons", [])
+CONTACT_INFO = {c["name"]: c for c in _m.get("contacts", [])}
 
-# --- contact points ----------------------------------------------------------------
-# (name, how the point is found, x, y, z, pad radius)
-#   top    : ray straight down at (x, y)
-#   bottom : under a foot at (x, y) on the table plane
-#   side   : ray from the side at (y, z), x gives the side (+1 / -1)
-#   front  : ray from the front at (x, z)
-CONTACTS = [
-    ("nose",    "top",    0.0, -41.2, None, 2.5),
-    ("strip",   "top",    0.0,   4.0, None, 4.5),
-    ("back_l",  "top",  -17.0,  30.0, None, 4.5),
-    ("back_r",  "top",   17.0,  30.0, None, 4.5),
-    ("back_c",  "top",    0.0,  40.0, None, 4.5),
-    ("foot_fl", "bottom", -14.0, -35.0, None, 4.5),
-    ("foot_fr", "bottom",  14.0, -35.0, None, 4.5),
-    ("foot_bl", "bottom", -16.5,  27.0, None, 4.5),
-    ("foot_br", "bottom",  16.5,  27.0, None, 4.5),
-    ("side_l",  "side",   -1.0,  15.0, 4.0, 4.0),
-    ("side_r",  "side",    1.0,  15.0, 4.0, 4.0),
-    ("front_l", "front", -14.0, None, 4.0, 3.0),
-    ("front_r", "front",  14.0, None, 4.0, 3.0),
-]
 
-PETG_DENSITY = 1.27  # g/cm3
+def _contact(c):
+    """(name, ray, a, b, c, landing radius) as fields.contact_points reads it."""
+    a, b = c["at"]
+    if c["ray"] in ("top", "bottom"):
+        return c["name"], c["ray"], a, b, None, c["r"]
+    if c["ray"] == "side":
+        return c["name"], "side", float(c["side"]), a, b, c["r"]
+    return c["name"], c["ray"], a, None, b, c["r"]  # front / back: at = [x, z]
 
-# chosen PETG colours from 3D Pixel's palette: (name for the order, name for file names)
-PRINT_COLORS = {
-    "base": ("серый", "gray"),
-    "lid": ("белый прозрачный", "white-transparent"),
-}
+
+CONTACTS = [_contact(c) for c in _m.get("contacts", [])]
+if not SCAN.exists() and _m.get("source") == "dimensions":  # a stand-in is rebuilt, not kept in git
+    from .intake import stand_in
+    stand_in(_m["dimensions"], CONFIG["design"]["hinge"]).export(SCAN)
+
+# --- design ------------------------------------------------------------------------
+LATTICE = _d["lattice"]
+COMPOSITION = _d["composition"]
+CELL_OPEN = _d["cell_open"]
+CELL_FINE = _d["cell_fine"]
+FINE_NEAR = _d["fine_near"]
+RIB = _d["rib"]
+RIB_W = _d["rib_width"]
+FORM_STYLE = _d["form"]
+PARTING = _d["parting"]
+LIP = _d["lip"]
+HINGE_END = _d["hinge"]
+CONTACT_STYLE = _d["contacts"]
+PRINT_COLORS = _d["colors"]
+
+# --- parts -------------------------------------------------------------------------
+MATERIAL = _p["material"]
+DENSITY = {"PETG": 1.27, "PLA": 1.24, "ABS": 1.04, "ASA": 1.07}.get(MATERIAL, 1.27)  # g/cm3
+ROD = _p["rod"]
+PIN_HOLE_LID = round(ROD + _t["rod_play"], 4)  # free fit: lid knuckles turn on the rod
+PIN_HOLE_BASE = ROD                            # press fit: the base holds the rod
+MAGNET = _p["magnet"]
+MAG_D = round(MAGNET[0] + 0.2, 4)
+MAG_DEPTH = round(MAGNET[1] + 0.1, 4)
+BUMPER = _p["bumper"]
+GAP = round(BUMPER[1] - _t["bumper_squeeze"], 4)  # the mouse touches only the bumpers
+GAP_PAD = GAP                                       # at contacts inside button zones
+ORDER_LANGUAGE = CONFIG["print"]["order_language"]
+
+# --- technical ---------------------------------------------------------------------
+VOXEL = _t["voxel"]
+VOXEL_PRINT = _t["voxel_print"]
+MAX_WALL = _t["max_wall"]
+RIM_BAND = _t["rim_band"]
+LIP_H, LIP_T, LIP_CLEAR, LIP_CHAMFER = _t["lip_h"], _t["lip_t"], _t["lip_clear"], _t["lip_chamfer"]
+LIP_MAGNET_KEEPOUT = _t["lip_magnet_keepout"]
+KNUCKLE_R = _t["knuckle_r"]
+KNUCKLE_N = _t["knuckle_n"]
+KNUCKLE_GAP = _t["knuckle_gap"]
+KNUCKLE_CLEAR = _t["knuckle_clear"]
+KNUCKLE_LEAF = _t["knuckle_leaf"]
+OPEN_SWEEP_DEG = _t["open_sweep_deg"]
+LID_SWEEP_DEG = _t["lid_sweep_deg"]
+LID_SWEEP_STEP = _t["lid_sweep_step"]
+MAG_SKIN = _t["magnet_skin"]
+RIB_CHAMFER = _t["rib_chamfer"]
+RIB_INNER_CHAMFER = _t["rib_inner_chamfer"]
+RIB_MIN_FACE = _t["rib_min_face"]
+MAX_DEPTH_OPEN = _t["max_depth"]
+SKIN_SOLID = _t["skin_solid"]
+NODE_FAT = _t["node_fat"]
+FINE_REACH = _t["fine_reach"]
+FINE_CURVE = _t["fine_curve"]
+FIT = CONFIG["fit"]
+
+# --- derived from the mouse ----------------------------------------------------------
+if DERIVED:
+    GRID_MIN = tuple(DERIVED["grid_min"])
+    GRID_MAX = tuple(DERIVED["grid_max"])
+    PART_Z0 = DERIVED["part_z0"]
+    PART_SLOPE = DERIVED["part_slope"]
+    HINGE_Y = DERIVED["hinge_y"]
+    KNUCKLE_SPAN = DERIVED["knuckle_span"]
+    LIP_FRONT_Y = DERIVED["lip_front_y"]
+    MAGNET_X = DERIVED["magnet_x"]
+    MAGNET_Y = DERIVED["magnet_y"]
+    MAGNET_PICK = DERIVED.get("magnet_pick", "back")  # back: furthest back spot that fits; room: most room
+    FORM = DERIVED["form"]
+else:  # a new mouse before `fit`: only intake and fit may run
+    FORM = None

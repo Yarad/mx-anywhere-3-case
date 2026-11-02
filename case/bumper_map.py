@@ -18,26 +18,14 @@ from . import params as P  # noqa: E402
 
 TEXT = {
     "en": {
-        "labels": {
-            "nose": "nose in front of the wheel", "strip": "strip behind SmartShift", "back_l": "back, side",
-            "back_r": "back, side", "back_c": "back, centre", "foot_fl": "under a front foot",
-            "foot_fr": "under a front foot", "foot_bl": "under a back foot", "foot_br": "under a back foot",
-            "side_l": "side", "side_r": "side", "front_l": "front, next to USB-C", "front_r": "front, next to USB-C",
-        },
-        "nose_size": " (Ø 4–5 mm)", "base": "Base — looking in from above",
-        "lid": "Lid opened forward — looking in from above", "hinge": "hinge", "side": "side-\nbutton\nside",
-        "title": "Bumper map: self-adhesive silicone bumpers Ø 6 × 2 mm, 13 pcs",
+        "base": "Base — looking in from above", "lid": "Lid opened — looking in from above",
+        "hinge": "hinge", "side": "side-\nbutton\nside",
+        "title": "Bumper map: self-adhesive silicone bumpers Ø {d:g} × {h:g} mm, {n} pcs", "size": " (Ø {d:g} mm)",
     },
     "ru": {
-        "labels": {
-            "nose": "носик перед колесом", "strip": "полоса за SmartShift", "back_l": "сзади сбоку",
-            "back_r": "сзади сбоку", "back_c": "сзади по центру", "foot_fl": "под передней ножкой",
-            "foot_fr": "под передней ножкой", "foot_bl": "под задней ножкой", "foot_br": "под задней ножкой",
-            "side_l": "бок", "side_r": "бок", "front_l": "перёд, рядом с USB-C", "front_r": "перёд, рядом с USB-C",
-        },
-        "nose_size": " (Ø 4–5 мм)", "base": "Основание — вид сверху внутрь",
-        "lid": "Крышка, откинутая вперёд — вид сверху внутрь", "hinge": "петля", "side": "сторона\nбоковых\nкнопок",
-        "title": "Карта демпферов: силиконовые самоклеящиеся Ø 6 × 2 мм, 13 шт",
+        "base": "Основание — вид сверху внутрь", "lid": "Крышка, откинутая на петле — вид сверху внутрь",
+        "hinge": "петля", "side": "сторона\nбоковых\nкнопок",
+        "title": "Карта демпферов: силиконовые самоклеящиеся Ø {d:g} × {h:g} мм, {n} шт", "size": " (Ø {d:g} мм)",
     },
 }
 
@@ -75,22 +63,24 @@ def draw(stage="print", lang="en", out=None):
             if on_lid != (part == "lid"):
                 continue
             x, y = p[0], (-p[1] if below else p[1])
-            dia = 4.5 if name == "nose" else 6.0
+            info = P.CONTACT_INFO[name]
+            dia = info.get("bumper_d", P.BUMPER[0])
             ax.add_patch(plt.Circle((x, y), dia / 2, fill=False, color="#D85A30", lw=2.5))
             ax.annotate(str(i), (x, y), xytext=(x + 6, y + 3), color="#D85A30", fontsize=15,
                         fontweight="bold", arrowprops=dict(arrowstyle="-", color="#D85A30", lw=1))
-            ax.text(0.02, -0.04 - 0.035 * k, f"{i} — {t['labels'][name]}" + (t["nose_size"] if name == "nose" else ""),
+            ax.text(0.02, -0.04 - 0.035 * k, f"{i} — {info.get(lang, name)}" + (t["size"].format(d=dia) if dia != P.BUMPER[0] else ""),
                     transform=ax.transAxes, fontsize=12, color="#712B13", va="top")
             k += 1
         hinge_y = 1.0 if below else 0.0
         ax.text(0.5, hinge_y + (0.01 if below else -0.015), t["hinge"], transform=ax.transAxes, ha="center",
                 va="bottom" if below else "top", fontsize=12, color="#5F5E5A")
-        ax.text(1.0, 0.5, t["side"], transform=ax.transAxes, ha="left", va="center",
-                fontsize=11, color="#5F5E5A")
+        if any(b["x"][0] > 0 for b in P.BUTTONS):  # side buttons on +X, the right of the picture
+            ax.text(1.0, 0.5, t["side"], transform=ax.transAxes, ha="left", va="center",
+                    fontsize=11, color="#5F5E5A")
         ax.set_title(title, fontsize=14, pad=22)
         ax.set_aspect("equal")
         ax.axis("off")
-    plt.suptitle(t["title"], fontsize=16)
+    plt.suptitle(t["title"].format(d=P.BUMPER[0], h=P.BUMPER[1], n=len(contacts)), fontsize=16)
     plt.subplots_adjust(left=0.03, right=0.92, top=0.9, bottom=0.25, wspace=0.25)
     out = out or d / ("bumper_map.png" if lang == "en" else f"bumper_map.{lang}.png")
     plt.savefig(out, dpi=80)

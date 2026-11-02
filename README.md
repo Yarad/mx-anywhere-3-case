@@ -2,11 +2,11 @@
 
 **English** · [Русский](README.ru.md)
 
-A 3D-printable hard carry case for the Logitech MX Anywhere 3 mouse. Its one job: when the mouse is thrown into a backpack, nothing presses its buttons.
+A 3D-printable hard carry case for the Logitech MX Anywhere 3 mouse. Its one job: when the mouse is thrown into a backpack, nothing presses its buttons. The same code makes one for [any other mouse](#a-case-for-your-own-mouse).
 
 ![The case: closed and open, lid in translucent white PETG, base in grey](docs/case_views.png)
 
-Rotate it in 3D right on GitHub: [closed](docs/3d/case_closed.stl) · [open](docs/3d/case_open.stl).
+Rotate it in 3D right on GitHub: [closed](mice/mx-anywhere-3/3d/case_closed.stl) · [open](mice/mx-anywhere-3/3d/case_open.stl).
 
 - **Lid and base**, printed separately and joined at the front by a printed 5-knuckle hinge on a 3 mm rod; held shut at the back by two pairs of 6 × 2 mm magnets; a lip around the back keeps the halves from sliding.
 - **Voronoi lattice** cut through the wall as wedge-shaped ribs (octagonal from the outside, narrowing towards the mouse). A solid "heel" at the back and bottom dissolves into large cells; cells shrink only towards the hinge.
@@ -17,14 +17,28 @@ Rotate it in 3D right on GitHub: [closed](docs/3d/case_closed.stl) · [open](doc
 
 ## How it is built
 
-Everything is code, in `case/`. The organic parts are signed distance fields on a 0.2–0.3 mm grid; the mechanical parts are exact meshes.
+Everything is code, in `case/`; each mouse's settings are in `mice/<mouse>/`. The organic parts are signed distance fields on a 0.2–0.3 mm grid; the mechanical parts are exact meshes.
 
-1. **Outer form** (`form.py`): three Bézier curves, a top-view outline, a side profile and a normalised cross-section, swept into one smooth body.
+1. **Outer form** (`form.py`): three Bézier curves, a top-view outline, a side profile and a normalised cross-section, swept into one smooth body. The MX Anywhere 3's was drawn by hand; for another mouse `fit.py` moves the same few nodes until the form holds the cavity under at least 2 mm of material.
 2. **Cavity** (`fields.py`): the mouse scan offset by a gap that depends on the zone (buttons, contacts, everything else), then swept along both ways the case opens: lifting the mouse out of the base, and rotating the lid about the hinge axis. So nothing collides while opening.
 3. **Parting plane and lip**: a plane tilted about 6° through the widest points of the mouse's nose and back.
 4. **Lattice** (`lattice.py`): Voronoi seeds on the outer surface, with density from the composition (heel, belt along the parting line, hinge, magnets) and three seeds around every contact so a node lands right over it. Each wall voxel is projected onto the outer surface; its distance to the nearest Voronoi edge against the rib's depth profile decides rib or hole.
 5. **Meshes** (`build.py`, `hinge.py`): marching cubes, then [manifold3d](https://github.com/elalish/manifold) booleans for the knuckles, teardrop pin holes and magnet pockets.
 6. **Checks**: no overlap with the mouse, no overlap between lid and base, free opening up to 120°, wall thickness, overhangs.
+
+## A case for your own mouse
+
+The same code makes this kind of case for any mouse, from a 3D scan or just its length, width and height. The easiest way is the `mouse-case` skill for [Claude Code](https://claude.com/claude-code) in this repository: clone it, open it in Claude Code and ask for a case for your mouse (or type `/mouse-case`). It takes your mouse in, shows pictures of every design choice — lattice, where it stays solid, cell size, rib, hinge end, colours and more — builds the case and prepares the print files and an order for a print shop. The choices, with the MX Anywhere 3's as defaults, are listed in [the skill's parameter reference](.claude/skills/mouse-case/references/parameters.md).
+
+By hand, without the skill:
+
+```bash
+.venv/bin/python -m case my-mouse new --scan my-mouse.stl --side-buttons left   # or --dims 107 59 26.5
+.venv/bin/python -m case my-mouse options composition   # pictures of a design choice
+.venv/bin/python -m case my-mouse build stage2
+```
+
+Each mouse lives in `mice/<mouse>/`: `case.toml` (the mouse's buttons and contacts, the design choices), `derived.toml` (the outer form and the rest fitted to the mouse) and `seeds.npy` (the approved lattice).
 
 ## Usage
 
@@ -35,21 +49,21 @@ uv venv .venv
 uv pip install --python .venv/bin/python -r requirements.txt
 ```
 
-The mouse scan is **not included** (see below). Put a watertight STL of the MX Anywhere 3 at `Logitech MX Anywhere 3.stl` in the repository root, in this frame: millimetres, front (USB-C, wheel) towards −Y, side buttons towards +X, feet standing on z = −0.57. The contact points in `case/params.py` are placed for that frame.
+The mouse scan is **not included** (see below). Put a watertight STL of the MX Anywhere 3 at `Logitech MX Anywhere 3.stl` in the repository root, in this frame: millimetres, front (USB-C, wheel) towards −Y, side buttons towards +X, feet standing on z = −0.57. The contacts in `mice/mx-anywhere-3/case.toml` are placed for that frame.
 
 ```bash
-.venv/bin/python -m case.build stage1   # solid shell, no lattice
-.venv/bin/python -m case.build stage2   # with the lattice, 0.3 mm grid
-.venv/bin/python -m case.build print    # print-ready, 0.2 mm grid, parts in print orientation
-.venv/bin/python -m case.checks         # thin walls and overhangs of the print files
-.venv/bin/python -m case.bumper_map     # where the bumpers go
-.venv/bin/python -m case.order          # zip for the print shop, with the chosen colours
-.venv/bin/python -m case.preview github # light STLs in docs/3d for GitHub's 3D viewer
+.venv/bin/python -m case mx-anywhere-3 build stage1   # solid shell, no lattice
+.venv/bin/python -m case mx-anywhere-3 build stage2   # with the lattice, 0.3 mm grid
+.venv/bin/python -m case mx-anywhere-3 build print    # print-ready, 0.2 mm grid, parts in print orientation
+.venv/bin/python -m case mx-anywhere-3 checks         # thin walls and overhangs of the print files
+.venv/bin/python -m case mx-anywhere-3 bumper_map     # where the bumpers go
+.venv/bin/python -m case mx-anywhere-3 order          # zip for the print shop, with the chosen colours
+.venv/bin/python -m case mx-anywhere-3 preview github # light STLs in mice/mx-anywhere-3/3d for GitHub's 3D viewer
 ```
 
-The first run takes a few minutes (distance fields are cached in `build/cache`); later runs take about a minute. Rendering pictures (`case.colors`, `case.order`) uses the `cadgen` CLI from [text-to-cad](https://github.com/earthtojake/text-to-cad); the build itself does not need it.
+Results go to `build/<mouse>/`. The first run takes a few minutes (distance fields are cached in `build/cache`); later runs take about a minute. The colour sheet and the bed picture of the order use the `cadgen` CLI from [text-to-cad](https://github.com/earthtojake/text-to-cad); the build itself does not need it.
 
-All dimensions (gaps, hinge, magnets, lip, rib profile, cell sizes) live in `case/params.py` and `case/lattice.py`. The approved lattice layout is pinned in `case/approved_seeds.npy`; delete it to roll a new one.
+All dimensions (gaps, hinge, magnets, lip, rib profile, cell sizes) have defaults with comments in `case/defaults.toml`; a mouse's `case.toml` overrides them. The approved lattice layout is pinned in `mice/mx-anywhere-3/seeds.npy`; delete it to roll a new one.
 
 ## Printing
 

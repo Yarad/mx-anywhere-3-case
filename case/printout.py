@@ -48,7 +48,7 @@ def export(lid, base, out, log):
         oh, oh_low = overhang_area(m)
         v = parts[name].volume() / 1000
         log(f"{name}: {len(m.faces)} triangles, watertight {m.is_watertight}, size {np.round(m.extents, 1)} mm, "
-            f"{v:.1f} cm3 ~ {v * P.PETG_DENSITY:.0f} g PETG")
+            f"{v:.1f} cm3 ~ {v * P.DENSITY:.0f} g {P.MATERIAL}")
         log(f"  wall: min {np.nanmin(t):.2f}, 1% {np.nanpercentile(t, 1):.2f}, median {np.nanmedian(t):.2f} mm; "
             f"under 1.0 mm: {np.mean(t < 1.0) * 100:.2f}% of surface")
         log(f"  overhang >45 deg: {oh:.0f} mm2 (of it within 4 mm of the bed: {oh_low:.0f} mm2)")

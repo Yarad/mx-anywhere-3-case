@@ -1,36 +1,23 @@
 """Outer form of the case: three Bezier curves combined into one smooth body.
 
-plan    -- top-view outline, right half (x, y)
+plan    -- top-view outline, right half (x, y); plan_left, if given, the left half
+           (x > 0 as well) for a form that follows an asymmetric mouse
 profile -- side-view outline (y, z), split into a lower and an upper chain
 section -- front-view cross-section, normalised: half-width u(v) for v in [0, 1]
            from the flat bottom (v = 0) to the top (v = 1)
 
-A point is inside when zb(y) <= z <= zt(y) and |x| <= hw(y) * u(v).
+A point is inside when zb(y) <= z <= zt(y) and |x| <= hw(y) * u(v), hw taken from
+the half of the plan on the point's side. The curves live in mice/<mouse>/derived.toml.
 """
 import numpy as np
 
 from . import params as P
 
-PLAN = [  # right half, from the front tip to the back tip
-    [(0, -55.5), (18, -55.5), (28.5, -53), (32, -45)],
-    [(32, -45), (34.5, -39), (35.4, -26), (35.8, -10)],  # room over the side buttons
-    [(35.8, -10), (36.1, 5), (37.5, 15), (37, 25)],
-    [(37, 25), (38, 46), (32, 56.5), (0, 56.5)],  # full back corners: room for the magnets
-]
-PROFILE_LOWER = [  # front tip -> along the bottom -> back tip
-    [(-55.5, 7.5), (-55.5, 0), (-52, -4.6), (-46, -4.6)],
-    [(-46, -4.6), (-20, -4.6), (20, -4.6), (43, -4.6)],
-    [(43, -4.6), (51.5, -4.6), (56.5, 8), (56.5, 19)],
-]
-PROFILE_UPPER = [  # back tip -> over the top -> front tip
-    [(56.5, 19), (56.5, 30), (46.5, 39), (15, 39)],
-    [(15, 39), (-15, 39), (-32, 33.5), (-45, 22.5)],
-    [(-45, 22.5), (-52, 16.5), (-55.5, 12), (-55.5, 7.5)],
-]
-SECTION = [  # normalised right half of the front view, bottom -> top
-    [(0.8, 0.0), (0.87, 0.06), (1.0, 0.188), (1.0, 0.424)],  # leaves the bed at 45 deg: no support
-    [(1.0, 0.424), (1.0, 0.753), (0.693, 1.0), (0.0, 1.0)],
-]
+PLAN = P.FORM["plan"]
+PLAN_LEFT = P.FORM.get("plan_left")
+PROFILE_LOWER = P.FORM["profile_lower"]
+PROFILE_UPPER = P.FORM["profile_upper"]
+SECTION = P.FORM["section"]
 
 
 def bezier(segments, n=400):
@@ -45,14 +32,17 @@ def bezier(segments, n=400):
 
 
 _plan = bezier(PLAN)
+_plan_left = bezier(PLAN_LEFT) if PLAN_LEFT else _plan
 _lower = bezier(PROFILE_LOWER)
 _upper = bezier(PROFILE_UPPER)[::-1]
 _section = bezier(SECTION)
 Y_FRONT, Y_BACK = _plan[0, 1], _plan[-1, 1]
+Z_BOTTOM, Z_TOP = round(float(_lower[:, 1].min()), 6), round(float(_upper[:, 1].max()), 6)
 
 
-def half_width(y):
-    return np.interp(y, _plan[:, 1], _plan[:, 0], left=0.0, right=0.0)
+def half_width(y, left=False):
+    pl = _plan_left if left else _plan
+    return np.interp(y, pl[:, 1], pl[:, 0], left=0.0, right=0.0)
 
 
 def z_bottom(y):
@@ -73,7 +63,8 @@ def implicit(x, y, z):
     zb, zt = z_bottom(y), z_top(y)
     h = np.maximum(zt - zb, 1e-3)
     v = np.clip((z - zb) / h, 0.0, 1.0)
-    f = np.maximum.reduce([np.abs(x) - half_width(y) * section_u(v), zb - z, z - zt])
+    hw = np.where(x < 0, half_width(y, True), half_width(y)) if PLAN_LEFT else half_width(y)
+    f = np.maximum.reduce([np.abs(x) - hw * section_u(v), zb - z, z - zt])
     outside = (y < Y_FRONT) | (y > Y_BACK)
     return np.where(outside, np.maximum(f, 1.0), f)
 
@@ -86,8 +77,8 @@ def surface_mesh(n_y=520, n_side=240, n_bottom=48):
     side = bezier(SECTION, n_side // 2)                      # (u, v) right side, bottom -> top
     bottom = np.c_[np.linspace(-0.8, 0.8, n_bottom), np.zeros(n_bottom)][1:-1]
     loop = np.vstack([bottom[n_bottom // 2 - 1:], side, side[::-1][1:-1] * [-1, 1], bottom[:n_bottom // 2 - 1]])
-    hw, zb, zt = half_width(ys), z_bottom(ys), z_top(ys)
-    X = hw[:, None] * loop[None, :, 0]
+    hw, hl, zb, zt = half_width(ys), half_width(ys, True), z_bottom(ys), z_top(ys)
+    X = np.where(loop[None, :, 0] < 0, hl[:, None], hw[:, None]) * loop[None, :, 0]
     Y = np.repeat(ys[:, None], len(loop), 1)
     Z = zb[:, None] + (zt - zb)[:, None] * loop[None, :, 1]
     verts = np.stack([X, Y, Z], -1).reshape(-1, 3)

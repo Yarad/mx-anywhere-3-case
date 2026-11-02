@@ -1,8 +1,13 @@
-"""Stage 1: closed shell without the lattice.
+"""Build the case of the current mouse (see params.py):
 
-Run:  .venv/bin/python -m case.build
-Writes build/stage1/{lid,base}.stl and assembly GLBs for viewing.
+  stage1  closed shell without the lattice
+  stage2  with the lattice, preview grid
+  print   print grid, parts turned to their print orientation
+
+Run:  .venv/bin/python -m case <mouse> build [stage]
+Writes build/<mouse>/<stage>/{lid,base}.stl, light preview GLBs and, for print, the print files.
 """
+import json
 import time
 
 import numpy as np
@@ -15,6 +20,7 @@ from .preview import preview
 from . import params as P
 
 OUT = P.BUILD / "stage1"
+OPTION = False  # building a quick, coarse variant for an option sheet
 
 
 def log(msg, t0=[time.time()]):
@@ -27,28 +33,50 @@ def sample(grid, field, pts):
 
 
 def find_magnets(grid, O, Cb, Cl):
-    """Spot on the back half of the rim with the most material around it, on the right; mirrored."""
-    xs, ys = np.meshgrid(np.arange(4, 36, 0.25), np.arange(15, 56, 0.25), indexing="ij")
-    pts = np.stack([xs.ravel(), ys.ravel(), form.part_z(ys.ravel())], 1)
-    room = np.minimum.reduce([-sample(grid, O, pts), sample(grid, Cb, pts), sample(grid, Cl, pts)])
-    best = int(np.argmax(room))
-    c = pts[best]
-    return [c * [-1, 1, 1], c], float(room[best])
+    """Spot on the back of the rim with the most material around it, on the right;
+    mirrored, or searched on the left too when the form is asymmetric."""
+    def best(sign):
+        xs, ys = np.meshgrid(sign * np.arange(*P.MAGNET_X, 0.25), np.arange(*P.MAGNET_Y, 0.25), indexing="ij")
+        pts = np.stack([xs.ravel(), ys.ravel(), form.part_z(ys.ravel())], 1)
+        room = np.minimum.reduce([-sample(grid, O, pts), sample(grid, Cb, pts), sample(grid, Cl, pts)])
+        i = int(np.argmax(room))
+        fits = room >= P.MAG_D / 2 + P.MAG_SKIN + 0.15
+        if P.MAGNET_PICK == "back" and fits.any():  # the furthest back spot that holds a magnet
+            i = int(np.argmax(np.where(fits, pts[:, 1], -np.inf)))
+        return pts[i], float(room[i])
+
+    c, room = best(1)
+    if not form.PLAN_LEFT:
+        return [c * [-1, 1, 1], c], room
+    left, room_left = best(-1)
+    return [left, c], min(room, room_left)
+
+
+def seed_points(s_out, nodes, magnets):
+    """The approved lattice layout if it was made for the same cells, else a new one."""
+    made_for = {"cell_open": P.CELL_OPEN, "cell_fine": P.CELL_FINE, "fine_near": P.FINE_NEAR,
+                "contacts": P.CONTACT_STYLE, "form": json.dumps(P.FORM, sort_keys=True)}
+    info = P.SEEDS_FILE.with_suffix(".json")
+    if P.SEEDS_FILE.exists() and (not info.exists() or json.loads(info.read_text()) == made_for):
+        return np.load(P.SEEDS_FILE)  # same cells at any resolution
+    pts = lattice.seeds(s_out, nodes, magnets)
+    if not OPTION:  # trying a choice leaves the approved layout alone
+        np.save(P.SEEDS_FILE, pts)
+        info.write_text(json.dumps(made_for, indent=1))
+    return pts
 
 
 def lattice_walls(grid, O, Cb, Cl, Pl, pads, contacts, magnets):
     """Walls of base and lid with the Voronoi lattice cut through them."""
     s_out = grid.to_mesh(O)
-    nodes = lattice.contact_nodes(s_out, contacts, magnets)
-    if P.SEEDS_FILE.exists():  # the approved layout: same cells at any resolution or small form change
-        seed_pts = np.load(P.SEEDS_FILE)
-    else:
-        seed_pts = lattice.seeds(s_out, nodes, magnets)
-        np.save(P.SEEDS_FILE, seed_pts)
-    log(f"lattice: {len(seed_pts)} cells, contact nodes: {', '.join(n[0] for n in nodes)}")
+    nodes = lattice.contact_nodes(s_out, contacts, magnets) if P.CONTACT_STYLE == "nodes" else []
+    seed_pts = seed_points(s_out, nodes, magnets)
+    log(f"lattice: {len(seed_pts)} cells, contact nodes: {', '.join(n[0] for n in nodes) or 'none'}")
     gx, gy, gz = np.gradient(O, grid.h)
     walls = []
     keep = np.abs(Pl) - P.RIM_BAND  # rim belt stays full thickness
+    if P.CONTACT_STYLE == "pads":  # and so do round pads under the bumpers
+        keep = np.minimum(keep, pads)
     for C in (Cb, Cl):
         wall = np.maximum(O, -C)
         mask = (wall < 0.6) & (O > -lattice.MAX_DEPTH_OPEN - 1)
@@ -58,7 +86,7 @@ def lattice_walls(grid, O, Cb, Cl, Pl, pads, contacts, magnets):
         g /= np.maximum(np.linalg.norm(g, axis=1, keepdims=True), 1e-6)
         o = O[idx]
         proj = x - o[:, None] * g
-        s = lattice.composition(proj, magnets)
+        s = lattice.composition(proj, magnets, contacts)
         depth = -o
         cap = lattice.MAX_DEPTH_OPEN + (lattice.SKIN_SOLID - lattice.MAX_DEPTH_OPEN) * s
         inner = np.minimum(C[idx], cap - depth)
@@ -72,11 +100,12 @@ def lattice_walls(grid, O, Cb, Cl, Pl, pads, contacts, magnets):
 
 
 def build(stage="stage1"):
-    global OUT
+    global OUT, OPTION
     OUT = P.BUILD / stage
-    with_lattice = stage != "stage1"
+    OPTION = stage.startswith("options/")
+    with_lattice = stage != "stage1" and P.LATTICE == "voronoi"
     OUT.mkdir(parents=True, exist_ok=True)
-    grid = F.Grid(h=P.VOXEL_PRINT if stage == "print" else P.VOXEL)
+    grid = F.Grid(h=P.VOXEL_PRINT if stage == "print" else 0.5 if OPTION else P.VOXEL)
     log(f"grid {grid.shape} = {np.prod(grid.shape) / 1e6:.1f} M voxels")
     sm = F.mouse_sdf(grid); log("mouse sdf")
     O = F.outer_sdf(grid); log("outer sdf")
@@ -100,11 +129,14 @@ def build(stage="stage1"):
         X3, Y3, Z3 = grid.mesh()
         lip = np.maximum(lip, P.LIP_MAGNET_KEEPOUT - np.sqrt((X3 - c[0]) ** 2 + (Y3 - c[1]) ** 2))
         del X3, Y3, Z3
+    if P.LIP == "none":
+        lip = np.full(grid.shape, 1e3, np.float32)
 
     if with_lattice:
         base_w, lid_w = lattice_walls(grid, O, Cb, Cl, Pl, pads, contacts, magnets)
-    else:
-        keep = np.minimum.reduce([-O - P.MAX_WALL, np.abs(Pl) - P.RIM_BAND, pads])
+    else:  # stage 1 preview, or a plain shell when the design has no lattice
+        wall = P.MAX_WALL if stage == "stage1" else P.SKIN_SOLID
+        keep = np.minimum.reduce([-O - wall, np.abs(Pl) - P.RIM_BAND, pads])
         base_w = np.maximum.reduce([O, -Cb, keep])
         lid_w = np.maximum.reduce([O, -Cl, keep])
     base_f = np.minimum(np.maximum(base_w, Pl), lip)
@@ -134,6 +166,9 @@ def build(stage="stage1"):
     base_t.export(OUT / "base.stl")
     mouse = grid.to_mesh(sm)  # clean, consistently wound copy of the scan
 
+    if OPTION:
+        log("done")
+        return
     report(lid, base, hinge.to_manifold(mouse), magnets)
     if stage == "print":
         printout.export(lid, base, OUT, log)
@@ -147,7 +182,7 @@ def build(stage="stage1"):
 def report(lid, base, ms, magnets):
     for name, part in [("lid", lid), ("base", base)]:
         v = part.volume() / 1000
-        log(f"{name}: {v:.1f} cm3 = {v * P.PETG_DENSITY:.0f} g PETG solid; genus {part.genus()}; "
+        log(f"{name}: {v:.1f} cm3 = {v * P.DENSITY:.0f} g {P.MATERIAL} solid; genus {part.genus()}; "
             f"touches mouse {(part ^ ms).volume():.2f} mm3")
     log(f"lid/base overlap {(lid ^ base).volume():.3f} mm3")
     ya, za = hinge.axis()

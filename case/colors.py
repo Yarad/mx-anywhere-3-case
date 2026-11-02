@@ -22,22 +22,30 @@ from . import params as P  # noqa: E402
 from .preview import Z_UP_TO_Y_UP  # noqa: E402
 
 OUT = P.BUILD / "colors"
-MOUSE = "#2B2B2C"  # graphite MX Anywhere 3
-# PETG colours 3D Pixel has in stock: (hex, metallic)
-PETG = {
-    "белый": ("#F2F1EC", 0.0), "белый прозрачный": ("#D9E2E6", 0.0), "серый": ("#8C8E90", 0.0),
-    "серый металлик": ("#75787C", 0.55), "чёрный": ("#1E1E1F", 0.0), "красный": ("#D8262B", 0.0),
-    "оранжевый": ("#F07A1A", 0.0), "жёлтый": ("#F3D21E", 0.0), "синий": ("#1F4FD1", 0.0),
-    "фиолетовый": ("#7A55D6", 0.0), "бордово-фиолетовый": ("#8E1B3A", 0.0), "бронза": ("#A2873A", 0.5),
+MOUSE = "#2B2B2C"  # graphite, like most mice
+# common PETG colours (the palette of the 3D Pixel print shop): name -> (Russian name, hex, metallic)
+PALETTE = {
+    "white": ("белый", "#F2F1EC", 0.0), "white-transparent": ("белый прозрачный", "#D9E2E6", 0.0),
+    "gray": ("серый", "#8C8E90", 0.0), "gray-metallic": ("серый металлик", "#75787C", 0.55),
+    "black": ("чёрный", "#1E1E1F", 0.0), "red": ("красный", "#D8262B", 0.0),
+    "orange": ("оранжевый", "#F07A1A", 0.0), "yellow": ("жёлтый", "#F3D21E", 0.0),
+    "blue": ("синий", "#1F4FD1", 0.0), "purple": ("фиолетовый", "#7A55D6", 0.0),
+    "burgundy": ("бордово-фиолетовый", "#8E1B3A", 0.0), "bronze": ("бронза", "#A2873A", 0.5),
 }
+PETG = {k: v[1:] for k, v in PALETTE.items()}  # name -> (hex, metallic)
 SCHEMES = [  # (title, base, lid, solid areas or None)
-    ("A · крышка белая, основание серый металлик", "серый металлик", "белый", None),
-    ("B · крышка бронза, основание чёрное", "чёрный", "бронза", None),
-    ("C · крышка оранжевая, основание чёрное", "чёрный", "оранжевый", None),
-    ("D · крышка белая прозрачная, основание серое", "серый", "белый прозрачный", None),
-    ("E · всё серый металлик", "серый металлик", "серый металлик", None),
-    ("F · крышка бордово-фиолетовая, основание чёрное", "чёрный", "бордово-фиолетовый", None),
+    ("A · lid white, base gray metallic", "gray-metallic", "white", None),
+    ("B · lid bronze, base black", "black", "bronze", None),
+    ("C · lid orange, base black", "black", "orange", None),
+    ("D · lid white transparent, base gray", "gray", "white-transparent", None),
+    ("E · all gray metallic", "gray-metallic", "gray-metallic", None),
+    ("F · lid burgundy, base black", "black", "burgundy", None),
 ]
+
+
+def color_name(color, lang="en"):
+    """How to call a palette colour in an order: 'white-transparent' or 'белый прозрачный'."""
+    return PALETTE[color][0] if lang == "ru" and color in PALETTE else color
 
 
 def rgba(hex_color):

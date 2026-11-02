@@ -1,0 +1,62 @@
+# Carry case for the Logitech Pebble M350, from its dimensions only (no scan): an example
+# of a stand-in mouse. Not printed yet. The mouse, its features and the design.
+# Anything not set here comes from case/defaults.toml; geometry computed from the
+# mouse is in derived.toml (python -m case logitech-pebble-m350 fit).
+#
+# Lengths in mm in the case frame: front of the mouse at -Y (the hinge end), top at +Z,
+# the user's left at +X, feet on z = 0. Check the pictures from `python -m case logitech-pebble-m350 intake`.
+
+[mouse]
+name = "Logitech Pebble M350"
+mesh = "mice/logitech-pebble-m350/mouse.stl"   # repository-relative, in the case frame
+source = "dimensions"                 # scan | dimensions
+dimensions = { length = 107, width = 59, height = 26.5, hump = 0.55, widest = 0.6 }   # the stand-in is rebuilt from these if mouse.stl is missing
+table_z = 0.0
+
+# Zones the case keeps clear of: inside each box the gap grows to `gap` (soft 1.5 mm edges).
+buttons = [
+  { name = "main buttons and wheel", x = [-26, 26], y = [-inf, 16], z = [7.9, inf], gap = 3 },
+]
+
+# Where the mouse rests on bumpers. The point on the mouse is found by a ray:
+#   top / bottom: straight down / up at at = [x, y]   (bottom: under a foot, on the table plane)
+#   side: from side = +1 (+X) or -1 at at = [y, z]
+#   front / back: from -Y / +Y at at = [x, z]
+# r is the radius of the landing; bumper_d a smaller bumper than [parts] bumper, if needed.
+contacts = [
+  { name = "back_l", ray = "top", at = [-15.3, 32.1], r = 4.5, en = "back, side", ru = "сзади сбоку" },
+  { name = "back_r", ray = "top", at = [15.3, 32.1], r = 4.5, en = "back, side", ru = "сзади сбоку" },
+  { name = "back_c", ray = "top", at = [0, 42.8], r = 4.5, en = "back, centre", ru = "сзади по центру" },
+  { name = "foot_fl", ray = "bottom", at = [-12.7, -37.5], r = 4.5, en = "under a front foot", ru = "под передней ножкой" },
+  { name = "foot_fr", ray = "bottom", at = [12.7, -37.5], r = 4.5, en = "under a front foot", ru = "под передней ножкой" },
+  { name = "foot_bl", ray = "bottom", at = [-15, 28.9], r = 4.5, en = "under a back foot", ru = "под задней ножкой" },
+  { name = "foot_br", ray = "bottom", at = [15, 28.9], r = 4.5, en = "under a back foot", ru = "под задней ножкой" },
+  { name = "side_l", ray = "side", side = -1, at = [10.5, 3.4], r = 4, en = "side", ru = "бок" },
+  { name = "side_r", ray = "side", side = 1, at = [10.5, 3.4], r = 4, en = "side", ru = "бок" },
+  { name = "front_l", ray = "front", at = [-12.7, 3.4], r = 3, en = "front", ru = "перёд" },
+  { name = "front_r", ray = "front", at = [12.7, 3.4], r = 3, en = "front", ru = "перёд" },
+]
+
+[design]   # the choices; see case/defaults.toml for every option
+lattice = "voronoi"
+composition = "heel"
+cell_open = 11.0
+cell_fine = 5.0
+fine_near = "hinge"
+rib = "wedge"
+rib_width = 3.6
+form = "symmetric"
+parting = "tilted"
+lip = "inner"
+hinge = "front"
+contacts = "nodes"
+colors = { lid = "white-transparent", base = "gray" }
+
+[parts]
+material = "PETG"
+rod = 3.0
+magnet = [6.0, 2.0]
+bumper = [6.0, 3.0]   # thicker bumpers for a mouse built from its dimensions
+
+[print]
+order_language = "en"

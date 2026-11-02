@@ -4,7 +4,7 @@
 
 ## Файлы для печати
 
-Готовые файлы приложены к [последнему релизу](https://github.com/Yarad/mx-anywhere-3-case/releases/latest). Чтобы собрать их самому, выполните `.venv/bin/python -m case.build print` — они появятся в `build/print/`:
+Готовые файлы приложены к [последнему релизу](https://github.com/Yarad/mx-anywhere-3-case/releases/latest). Чтобы собрать их самому, выполните `.venv/bin/python -m case mx-anywhere-3 build print` — они появятся в `build/mx-anywhere-3/print/` (для другой мыши — имя её папки в `mice/`):
 
 | Файл | Что это |
 | --- | --- |
@@ -12,20 +12,20 @@
 | `mx_case_base.stl` | основание, в положении для печати |
 | `mx_case_lid.stl` | крышка, в положении для печати |
 
-Карта демпферов — `.venv/bin/python -m case.bumper_map`, файл `build/print/bumper_map.ru.png` (английская версия — `bumper_map.png`).
+Карта демпферов — `.venv/bin/python -m case mx-anywhere-3 bumper_map`, файл `build/mx-anywhere-3/print/bumper_map.ru.png` (английская версия — `bumper_map.png`).
 
 ## Заказ
 
-Отправлять салону печати — `mx_case_order.zip` из релиза (или собрать его командой `.venv/bin/python -m case.order` в `build/mx_case_order.zip`):
+Отправлять салону печати — архив заказа из релиза (или собрать его командой `.venv/bin/python -m case mx-anywhere-3 order` в `build/mx-anywhere-3/mx-anywhere-3_case_order.zip`):
 
 | В архиве | Что это |
 | --- | --- |
-| `mx_case_base_PETG_gray.stl` | основание — **PETG серый** |
-| `mx_case_lid_PETG_white-transparent.stl` | крышка — **PETG белый прозрачный** |
+| `case_base_PETG_gray.stl` | основание — **PETG серый** |
+| `case_lid_PETG_white-transparent.stl` | крышка — **PETG белый прозрачный** |
 | `zakaz.txt` | текст заказа: цвета, положение на столе, поддержки, настройки |
 | `na_stole.png`, `cveta.png` | как детали лежат на столе и как выглядит готовый чехол |
 
-Цвета заданы в `case/params.py` (`PRINT_COLORS`). STL не хранит цвет, поэтому он в названии файла и в тексте заказа. Детали разных цветов печатаются отдельными заданиями.
+Цвета — `[design] colors` в `case.toml` мыши (названия из `case/colors.py`), язык заказа — `[print] order_language` (`ru` или `en`). STL не хранит цвет, поэтому он в названии файла и в тексте заказа. Детали разных цветов печатаются отдельными заданиями.
 
 ## Для 3D Pixel
 
@@ -58,9 +58,9 @@
 
 ## Параметры, если что-то не подошло
 
-Всё в `case/params.py` и `case/lattice.py`, пересборка одной командой:
+Поменяйте `case.toml` мыши (значения по умолчанию с пояснениями — в `case/defaults.toml`) и пересоберите одной командой:
 
-- другой пруток — `PIN_HOLE_LID`, `PIN_HOLE_BASE`;
-- другие демпферы (высота) — `GAP`, `GAP_PAD` (зазор = высота демпфера − 0.3 мм);
-- тугой или свободный бортик — `LIP_CLEAR`;
-- другие магниты — `MAG_D`, `MAG_DEPTH`.
+- другой пруток — `[parts] rod` (отверстия крышки шире на 0.25 мм: `[tech] rod_play`);
+- другие демпферы — `[parts] bumper` (зазор = высота демпфера − 0.3 мм);
+- тугой или свободный бортик — `[tech] lip_clear`;
+- другие магниты — `[parts] magnet`.

@@ -1,0 +1,71 @@
+# Defaults for every case. A mouse's mice/<mouse>/case.toml overrides any of these.
+# The defaults are the choices made for the Logitech MX Anywhere 3 case.
+
+# --- design: what the skill asks about ---------------------------------------------
+[design]
+lattice = "voronoi"        # voronoi | none (plain shell, SKIN_SOLID thick)
+composition = "heel"       # where the wall stays solid and dissolves into the lattice:
+                           #   heel   solid back and bottom, opening diagonally to the nose and the top
+                           #   bone   solid only at the hinge, magnets, contacts and along the parting line
+                           #   tail   solid back, lattice towards the nose
+                           #   bottom solid bottom, lattice towards the top
+                           #   belt   wide solid belt along the parting line, lattice above and below
+cell_open = 11.0           # lattice cell size where it is open, mm
+cell_fine = 5.0            # cell size where it gets fine, mm
+fine_near = "hinge"        # hinge | buttons | none: where cells shrink to cell_fine
+rib = "wedge"              # rib cross-section: wedge (narrows inward) | octagon (full) | keel (thin web)
+rib_width = 3.6            # rib width at the outer face, mm
+form = "symmetric"         # symmetric | follow (each side follows its own side of the mouse)
+parting = "tilted"         # tilted (through the widest points of nose and back) | horizontal
+lip = "inner"              # inner (lip on the base, groove in the lid) | none
+hinge = "front"            # front | back: the end of the mouse at the hinge, magnets at the other end
+contacts = "nodes"         # nodes (lattice nodes thicken under the bumpers) | pads (round full-thickness pads)
+colors = { lid = "white-transparent", base = "gray" }  # names from case/colors.py PALETTE
+
+# --- bought parts and material: not asked, change here ------------------------------
+[parts]
+material = "PETG"          # PETG | PLA | ABS | ASA
+rod = 3.0                  # hinge rod diameter: M3 screw or steel rod; 1.75 for a piece of filament
+magnet = [6.0, 2.0]        # disc magnets, diameter x height; 2 pairs
+bumper = [6.0, 2.0]        # self-adhesive silicone bumpers, diameter x height: the gap is height - squeeze
+
+[print]
+order_language = "ru"      # language of the print-shop order package: ru | en
+
+# --- technical: advanced, only on request ---------------------------------------------
+[tech]
+voxel = 0.3                # SDF grid for previews, mm
+voxel_print = 0.2          # SDF grid for print files, mm
+bumper_squeeze = 0.3       # how much the bumpers are pressed
+rod_play = 0.25            # lid knuckle holes are this much wider than the rod (base holds it tight)
+max_wall = 4.5             # stage 1: the wall is cut back to this thickness
+rim_band = 6.0             # full wall thickness this far either side of the parting plane
+lip_h = 2.5
+lip_t = 1.4
+lip_clear = 0.2
+lip_chamfer = 0.6
+lip_magnet_keepout = 5.0
+knuckle_r = 3.5
+knuckle_n = 5              # odd knuckles (1, 3, 5) belong to the base, even to the lid
+knuckle_gap = 0.4
+knuckle_clear = 0.4
+knuckle_leaf = 5.0         # how far the knuckle's web reaches back into the wall
+open_sweep_deg = 120       # the base is cleared for the lid knuckles up to this angle
+lid_sweep_deg = 50         # the lid cavity is swept around the mouse up to this angle
+lid_sweep_step = 2.5
+magnet_skin = 0.4          # one 0.4 mm extrusion line around a magnet pocket
+rib_chamfer = 0.8          # outer chamfer of a rib
+rib_inner_chamfer = 0.5
+rib_min_face = 1.0         # inner face left after the inner chamfer
+max_depth = 8.0            # ribs reach in towards the mouse at most this far
+skin_solid = 3.0           # solid areas are a skin this thick
+node_fat = 1.3             # extra rib half-width at a contact node
+fine_reach = 52.0          # distance over which cells grow from cell_fine to cell_open
+fine_curve = 0.8           # < 1: cells stay large longer and shrink only close in
+
+# --- fitting the outer form to a new mouse (python -m case <mouse> fit) ---------------
+[fit]
+wall = 2.0                 # least material over the cavity (the mouse plus gaps, swept as the case opens), mm
+front = 5.5                # outer nose ahead of the mouse's nose (room for the hinge)
+back = 6.5                 # outer back behind the mouse's back (room for the magnets)
+floor = 4.0                # outer bottom below the table plane
