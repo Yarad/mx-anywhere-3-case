@@ -4,7 +4,7 @@
 
 ## Print files
 
-`.venv/bin/python -m case.build print` writes them to `build/print/`:
+Ready-made files are attached to [the latest release](https://github.com/Yarad/mx-anywhere-3-case/releases/latest). To build them yourself, `.venv/bin/python -m case.build print` writes them to `build/print/`:
 
 | File | What it is |
 | --- | --- |
@@ -16,7 +16,7 @@ The bumper map comes from `.venv/bin/python -m case.bumper_map`: `build/print/bu
 
 ## Ordering a print
 
-`.venv/bin/python -m case.order` builds `build/mx_case_order.zip`, ready to send to a print shop:
+`mx_case_order.zip` from the release (or `.venv/bin/python -m case.order`, which builds `build/mx_case_order.zip`) is ready to send to a print shop:
 
 | In the zip | What it is |
 | --- | --- |

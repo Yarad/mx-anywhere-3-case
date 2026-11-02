@@ -4,7 +4,7 @@
 
 ## Файлы для печати
 
-Собираются командой `.venv/bin/python -m case.build print` в папку `build/print/`:
+Готовые файлы приложены к [последнему релизу](https://github.com/Yarad/mx-anywhere-3-case/releases/latest). Чтобы собрать их самому, выполните `.venv/bin/python -m case.build print` — они появятся в `build/print/`:
 
 | Файл | Что это |
 | --- | --- |
@@ -16,7 +16,7 @@
 
 ## Заказ
 
-`.venv/bin/python -m case.order` собирает `build/mx_case_order.zip` — его и отправлять:
+Отправлять салону печати — `mx_case_order.zip` из релиза (или собрать его командой `.venv/bin/python -m case.order` в `build/mx_case_order.zip`):
 
 | В архиве | Что это |
 | --- | --- |

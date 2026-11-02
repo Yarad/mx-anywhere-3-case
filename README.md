@@ -6,10 +6,14 @@ A 3D-printable hard carry case for the Logitech MX Anywhere 3 mouse. Its one job
 
 ![The case: closed and open, lid in translucent white PETG, base in grey](docs/case_views.png)
 
+Rotate it in 3D right on GitHub: [closed](docs/3d/case_closed.stl) · [open](docs/3d/case_open.stl).
+
 - **Lid and base**, printed separately and joined at the front by a printed 5-knuckle hinge on a 3 mm rod; held shut at the back by two pairs of 6 × 2 mm magnets; a lip around the back keeps the halves from sliding.
 - **Voronoi lattice** cut through the wall as wedge-shaped ribs (octagonal from the outside, narrowing towards the mouse). A solid "heel" at the back and bottom dissolves into large cells; cells shrink only towards the hinge.
 - **The mouse touches the case at 13 points only**, through 2 mm self-adhesive silicone bumpers: on thickened lattice nodes or on solid wall. Everything else stays 1.7 mm away; the wheel, SmartShift and both main buttons get at least 3 mm, the side buttons 2.5 mm.
 - **About 72 g of PETG**, 75 × 115 × 44 mm.
+
+**Just want to print it?** Download the ready files from [Releases](https://github.com/Yarad/mx-anywhere-3-case/releases/latest): STLs and a 3MF plate in print orientation, and the order package for a print shop. You need neither Python nor the mouse scan for that.
 
 ## How it is built
 
@@ -24,7 +28,7 @@ Everything is code, in `case/`. The organic parts are signed distance fields on 
 
 ## Usage
 
-Python 3.11+ and [uv](https://github.com/astral-sh/uv):
+Only needed to change the design. Python 3.11+ and [uv](https://github.com/astral-sh/uv):
 
 ```bash
 uv venv .venv
@@ -40,6 +44,7 @@ The mouse scan is **not included** (see below). Put a watertight STL of the MX A
 .venv/bin/python -m case.checks         # thin walls and overhangs of the print files
 .venv/bin/python -m case.bumper_map     # where the bumpers go
 .venv/bin/python -m case.order          # zip for the print shop, with the chosen colours
+.venv/bin/python -m case.preview github # light STLs in docs/3d for GitHub's 3D viewer
 ```
 
 The first run takes a few minutes (distance fields are cached in `build/cache`); later runs take about a minute. Rendering pictures (`case.colors`, `case.order`) uses the `cadgen` CLI from [text-to-cad](https://github.com/earthtojake/text-to-cad); the build itself does not need it.
@@ -54,7 +59,7 @@ All dimensions (gaps, hinge, magnets, lip, rib profile, cell sizes) live in `cas
 - **Lid**: rim on the bed, dome up; tree supports from the build plate only (they grow inside the dome).
 - PETG, 0.4 mm nozzle, 0.2 mm layers, 3 walls, 100 % infill.
 
-Parts you need: 4 magnets 6 × 2 mm, a 3 mm rod 40 mm long (an M3 × 40 screw works), 13 silicone bumpers 6 × 2 mm. Print settings, assembly and the order package for a print shop are in [PRINTING.md](PRINTING.md).
+The print files are in [the latest release](https://github.com/Yarad/mx-anywhere-3-case/releases/latest). Parts you need: 4 magnets 6 × 2 mm, a 3 mm rod 40 mm long (an M3 × 40 screw works), 13 silicone bumpers 6 × 2 mm. Print settings, assembly and the order package for a print shop are in [PRINTING.md](PRINTING.md).
 
 ![Where the bumpers go](docs/bumper_map.png)
 

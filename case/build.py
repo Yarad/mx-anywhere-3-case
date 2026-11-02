@@ -125,6 +125,8 @@ def build(stage="stage1"):
     for c in magnets:
         lid = lid - hinge.magnet_pocket(c, True)
         base = base - hinge.magnet_pocket(c, False)
+    # marching cubes leaves sub-voxel crumbs in the lattice: keep the one real body of each part
+    lid, base = (max(m.decompose(), key=lambda c: c.volume()) for m in (lid, base))
     log("hinge, pin holes, magnet pockets")
 
     lid_t, base_t = hinge.to_trimesh(lid), hinge.to_trimesh(base)
