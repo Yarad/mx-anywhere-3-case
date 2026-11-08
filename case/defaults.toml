@@ -20,6 +20,10 @@ parting = "tilted"         # tilted (through the widest points of nose and back)
 lip = "inner"              # inner (lip on the base, groove in the lid) | none
 hinge = "front"            # front | back: the end of the mouse at the hinge, magnets at the other end
 contacts = "nodes"         # nodes (lattice nodes thicken under the bumpers) | pads (round full-thickness pads)
+notch = "chamfer"          # finger notch in the base under the lid's edge, opposite the hinge:
+                           #   chamfer  like the lid notch of a MacBook Pro: a straight 45 degree chamfer
+                           #            whose ends narrow to a point | none
+notch_size = [20.0, 3.0, 2.5]  # width point to point, length of each narrowing end, chamfer leg (mm)
 colors = { lid = "white-transparent", base = "gray" }  # names from case/colors.py PALETTE
 
 # --- bought parts and material: not asked, change here ------------------------------

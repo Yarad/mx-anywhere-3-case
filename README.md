@@ -8,7 +8,7 @@ A 3D-printable hard carry case for the Logitech MX Anywhere 3 mouse. Its one job
 
 Rotate it in 3D right on GitHub: [closed](mice/mx-anywhere-3/3d/case_closed.stl) · [open](mice/mx-anywhere-3/3d/case_open.stl).
 
-- **Lid and base**, printed separately and joined at the front by a printed 5-knuckle hinge on a 3 mm rod; held shut at the back by two pairs of 6 × 2 mm magnets; a lip around the back keeps the halves from sliding.
+- **Lid and base**, printed separately and joined at the front by a printed 5-knuckle hinge on a 3 mm rod; held shut at the back by two pairs of 6 × 2 mm magnets; a lip around the back keeps the halves from sliding. A finger notch at the back, like the one on a MacBook Pro, lets you lift the lid: the base's edge is chamfered at 45° under it for 20 mm.
 - **Voronoi lattice** cut through the wall as wedge-shaped ribs (octagonal from the outside, narrowing towards the mouse). A solid "heel" at the back and bottom dissolves into large cells; cells shrink only towards the hinge.
 - **The mouse touches the case at 13 points only**, through 2 mm self-adhesive silicone bumpers: on thickened lattice nodes or on solid wall. Everything else stays 1.7 mm away; the wheel, SmartShift and both main buttons get at least 3 mm, the side buttons 2.5 mm.
 - **About 72 g of PETG**, 75 × 115 × 44 mm.
@@ -23,7 +23,7 @@ Everything is code, in `case/`; each mouse's settings are in `mice/<mouse>/`. Th
 2. **Cavity** (`fields.py`): the mouse scan offset by a gap that depends on the zone (buttons, contacts, everything else), then swept along both ways the case opens: lifting the mouse out of the base, and rotating the lid about the hinge axis. So nothing collides while opening.
 3. **Parting plane and lip**: a plane tilted about 6° through the widest points of the mouse's nose and back.
 4. **Lattice** (`lattice.py`): Voronoi seeds on the outer surface, with density from the composition (heel, belt along the parting line, hinge, magnets) and three seeds around every contact so a node lands right over it. Each wall voxel is projected onto the outer surface; its distance to the nearest Voronoi edge against the rib's depth profile decides rib or hole.
-5. **Meshes** (`build.py`, `hinge.py`): marching cubes, then [manifold3d](https://github.com/elalish/manifold) booleans for the knuckles, teardrop pin holes and magnet pockets.
+5. **Meshes** (`build.py`, `hinge.py`, `notch.py`): marching cubes, then [manifold3d](https://github.com/elalish/manifold) booleans for the knuckles, teardrop pin holes, magnet pockets and the finger notch.
 6. **Checks**: no overlap with the mouse, no overlap between lid and base, free opening up to 120°, wall thickness, overhangs.
 
 ## A case for your own mouse

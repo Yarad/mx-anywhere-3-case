@@ -4,7 +4,8 @@
 
 Lattice, composition, cells, contacts and colours are built for real at a coarse
 grid (half a minute or so per choice) and drawn closed, from the front left and
-from the back right; rib, lip, hinge, form and parting are drawn as diagrams.
+from the back right; rib, lip, hinge, form and parting are drawn as diagrams; the
+finger notch is cut from a coarse build and drawn close up.
 Writes build/<mouse>/options/<parameter>.png, choices lettered A, B, C...
 """
 import json
@@ -45,6 +46,8 @@ CHOICES = {  # parameter -> [(value, caption)]
     "hinge": [("front", "hinge at the front, magnets at the back"), ("back", "hinge at the back, magnets at the front")],
     "form": [("symmetric", "symmetric form"), ("follow", "each side follows the mouse")],
     "parting": [("tilted", "tilted through the widest points"), ("horizontal", "horizontal")],
+    "notch": [("chamfer", "finger notch, like a MacBook Pro's"),
+              ("none", "no notch: lid and base meet flush")],
 }
 BUILT = {"lattice", "composition", "fine_near", "cells", "contacts"}
 
@@ -81,6 +84,58 @@ def built_sheet(param, values, out):
 def colour_sheet(values, out):
     d = P.BUILD / "stage2" if (P.BUILD / "stage2" / "lid.stl").exists() else build_variant("colors", P.LATTICE, 0)
     return grid_sheet([(caption, closed_views(d, value)) for value, caption in values], out, f"{P.NAME}: colours")
+
+
+def notch_sheet(values, out):
+    """The back of the case with and without the finger notch, close up and cut through
+    the middle. The case is built once without it; the notch is cut from that base."""
+    from . import form, hinge, notch
+    d = build_variant("notch", "none", 0)
+    lid, plain = trimesh.load(d / "lid.stl"), trimesh.load(d / "base.stl")
+    mouse = trimesh.load(P.SCAN)
+    width, ends, leg = P.NOTCH_SIZE
+    zp = float(form.part_z(form.Y_BACK))
+
+    def near_back(m):
+        m = m.slice_plane([0, form.Y_BACK - 16, 0], [0, 1, 0], cap=True)
+        m = m.slice_plane([0, 0, zp - 12], [0, 0, 1], cap=True)
+        return m.slice_plane([0, 0, zp + 12], [0, 0, -1], cap=True)
+
+    from .colors import PETG
+    colors = [R.rgb(PETG[P.PRINT_COLORS[k]][0]) for k in ("base", "lid")]
+    R.VIEWS["back below"] = ([-0.55, -0.78, 0.30], [0, 0, 1])
+    fig, axs = plt.subplots(len(values), 3, figsize=(20, 5.4 * len(values)), squeeze=False,
+                            gridspec_kw={"width_ratios": [1.3, 1.2, 0.62]})
+    for r, (value, caption) in enumerate(values):
+        base = plain
+        if value == "chamfer":
+            cut = hinge.to_manifold(plain) - hinge.to_manifold(notch.cutter(width, ends, leg))
+            base = hinge.to_trimesh(max(cut.decompose(), key=lambda m: m.volume()))
+        parts = [(near_back(base), colors[0]), (near_back(lid), [0.93, 0.92, 0.88])]
+        for c, (view, light) in enumerate([("back", (-0.25, 0.85, 0.45)), ("back below", (-0.3, 0.8, 0.5))]):
+            img, ext = R.shade(parts, view, px=0.08, light=light)
+            ax = axs[r, c]
+            ax.imshow(img, origin="lower", extent=ext)
+            ax.axis("off")
+            if view == "back":
+                ax.set_xlim(-width / 2 - 14, width / 2 + 14)
+                ax.set_ylim(zp - 7, zp + 5)
+        ax = axs[r, 2]
+        for m, col in [(base, "#5F5E5A"), (lid, "#C9A227"), (mouse, R.INK)]:
+            for e in m.section(plane_origin=[0, 0, 0], plane_normal=[1, 0, 0]).discrete:
+                ax.plot(e[:, 1], e[:, 2], color=col, lw=1.5)
+        ax.set_xlim(form.Y_BACK - 11, form.Y_BACK + 2)
+        ax.set_ylim(zp - 9, zp + 7)
+        ax.set_aspect("equal")
+        ax.grid(alpha=0.25)
+        ax.set_title("cut through the middle: base grey, lid yellow", fontsize=11, loc="left")
+        axs[r, 0].set_title(f"{string.ascii_uppercase[r]} · {caption}", loc="left", fontsize=15)
+    fig.suptitle(f"{P.NAME}: finger notch at the magnet end, {width:g} mm wide, {leg:g} mm chamfer, "
+                 f"ends {ends:g} mm", fontsize=16)
+    plt.tight_layout()
+    plt.savefig(out, dpi=60)
+    plt.close(fig)
+    return out
 
 
 def grid_sheet(rows, out, title):
@@ -221,6 +276,8 @@ def main(param, *only):
         rib_sheet(values, path)
     elif param == "lip":
         lip_sheet(values, path)
+    elif param == "notch":
+        notch_sheet(values, path)
     elif param in ("hinge", "parting"):
         side_sheet(param, values, path)
     else:

@@ -78,6 +78,8 @@ PARTING = _d["parting"]
 LIP = _d["lip"]
 HINGE_END = _d["hinge"]
 CONTACT_STYLE = _d["contacts"]
+NOTCH = _d["notch"]
+NOTCH_SIZE = _d["notch_size"]  # width, ends, leg
 PRINT_COLORS = _d["colors"]
 
 # --- parts -------------------------------------------------------------------------

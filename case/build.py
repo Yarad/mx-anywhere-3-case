@@ -15,7 +15,7 @@ import trimesh
 from scipy import ndimage
 
 from . import fields as F
-from . import form, hinge, lattice, printout
+from . import form, hinge, lattice, notch, printout
 from .preview import preview
 from . import params as P
 
@@ -50,6 +50,24 @@ def find_magnets(grid, O, Cb, Cl):
         return [c * [-1, 1, 1], c], room
     left, room_left = best(-1)
     return [left, c], min(room, room_left)
+
+
+def notch_report(grid, Cb, magnets, x0):
+    """How much room the finger notch leaves: in towards the lid's groove (or the cavity
+    without a lip) along the parting plane, and sideways to the magnet pockets."""
+    width, ends, leg = P.NOTCH_SIZE
+    y_out = float(notch.outer_y(np.array(x0), np.array(form.part_z(form.Y_BACK) - 0.5)))
+    ts = np.arange(0, 10, 0.05)
+    ys = y_out - ts
+    pts = np.stack([np.full_like(ts, x0), ys, form.part_z(ys) + 0.05], 1)
+    groove = P.LIP_T + P.LIP_CLEAR if P.LIP == "inner" else 0.0  # the lid's groove wall, or the cavity
+    inward = ts[np.argmax(sample(grid, Cb, pts) <= groove)] - leg - notch.ABOVE
+    sideways = min(abs(c[0] - x0) for c in magnets) - P.MAG_D / 2 - P.MAG_SKIN - width / 2
+    msg = (f"finger notch {width:g} mm wide, {leg:g} mm chamfer: room in to the "
+           f"{'lid groove' if groove else 'cavity'} {inward:.2f} mm, to the magnets {sideways:.1f} mm")
+    if inward < 0.3 or sideways < 1.0:
+        msg += "  <-- too tight: make [design] notch_size smaller"
+    return msg
 
 
 def seed_points(s_out, nodes, magnets):
@@ -157,6 +175,10 @@ def build(stage="stage1"):
     for c in magnets:
         lid = lid - hinge.magnet_pocket(c, True)
         base = base - hinge.magnet_pocket(c, False)
+    if P.NOTCH == "chamfer":
+        x0 = float(np.mean([c[0] for c in magnets]))
+        base = base - hinge.to_manifold(notch.cutter(*P.NOTCH_SIZE, x0=x0))
+        log(notch_report(grid, Cb, magnets, x0))
     # marching cubes leaves sub-voxel crumbs in the lattice: keep the one real body of each part
     lid, base = (max(m.decompose(), key=lambda c: c.volume()) for m in (lid, base))
     log("hinge, pin holes, magnet pockets")

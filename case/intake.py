@@ -223,6 +223,8 @@ parting = "tilted"
 lip = "inner"
 hinge = "{hinge}"
 contacts = "nodes"
+notch = "chamfer"
+notch_size = [20.0, 3.0, 2.5]
 colors = {{ lid = "white-transparent", base = "gray" }}
 
 [parts]

@@ -69,8 +69,8 @@ plainly that the fit is approximate and the bumpers are 3 mm to take up the diff
 
 One round of questions, each with its sheet, in this order: lattice, composition, cell size,
 where cells get fine, rib cross-section, how the mouse rests (nodes or pads), overlap (lip),
-parting line, form (only if the mouse is asymmetric), clearance over buttons, colours. The
-hinge end was settled at intake. Built sheets (lattice, composition, cells, fine_near, contacts)
+parting line, form (only if the mouse is asymmetric), clearance over buttons, finger notch,
+colours. The hinge end was settled at intake. Built sheets (lattice, composition, cells, fine_near, contacts)
 take about half a minute per choice; run them in the background and ask the diagram questions
 meanwhile.
 

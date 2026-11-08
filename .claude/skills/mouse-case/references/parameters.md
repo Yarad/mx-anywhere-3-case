@@ -45,9 +45,14 @@ Levels:
 | 11 | How the mouse rests | `contacts` | `nodes` (lattice nodes thicken under the bumpers) · `pads` (round full-thickness pads) | `nodes` | `options contacts` |
 | 12 | Clearance over buttons | `gap` of each zone in `[mouse] buttons` | mm | 3.0 on top, 2.5 on the sides | `features.png` |
 | 13 | Colours | `colors = { lid, base }` | names in `case/colors.py` `PALETTE`: white, white-transparent, gray, gray-metallic, black, red, orange, yellow, blue, purple, burgundy, bronze | lid `white-transparent`, base `gray` | `options colors` |
+| 14 | Finger notch | `notch`, `notch_size` | `chamfer` (like a MacBook Pro's: the base's edge under the lid chamfered at 45°, its ends narrowing to a point) · `none`; size = [width, ends, chamfer leg] mm | `chamfer`, [20, 3, 2.5] | `options notch` |
 
 Changing `hinge` after intake: run `new` again with `--hinge back --force` (the mouse is turned
 round), then `fit`. Changing `form` or `parting`: run `fit` again. The rest only needs `build`.
+
+The finger notch sits at the magnet end, centred between the magnets. `build` reports the room
+it leaves in towards the lid's groove (the chamfer may reach at most to it) and sideways to the
+magnet pockets, and flags it when either is too tight.
 
 ## Bought parts, material, printing (default)
 
